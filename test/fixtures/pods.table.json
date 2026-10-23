@@ -1,0 +1,136 @@
+{
+  "columnDefinitions": [
+    {
+      "name": "Name",
+      "type": "string",
+      "format": "name",
+      "priority": 0
+    },
+    {
+      "name": "Ready",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Status",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Restarts",
+      "type": "integer",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Age",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Ip",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    },
+    {
+      "name": "Node",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    }
+  ],
+  "rows": [
+    {
+      "cells": [
+        "nginx-7c5b8d65b8-abcde",
+        "1/1",
+        "Running",
+        0,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    },
+    {
+      "cells": [
+        "api-5f9c-xyz",
+        "1/2",
+        "CrashLoopBackOff",
+        6,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    },
+    {
+      "cells": [
+        "db-0",
+        "0/1",
+        "Pending",
+        0,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    },
+    {
+      "cells": [
+        "old-web-123",
+        "1/1",
+        "Terminating",
+        0,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    },
+    {
+      "cells": [
+        "setup-abc",
+        "0/1",
+        "Init:1/2",
+        0,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    },
+    {
+      "cells": [
+        "init-fail-1",
+        "0/1",
+        "Init:Error",
+        3,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    },
+    {
+      "cells": [
+        "job-xyz",
+        "0/1",
+        "Completed",
+        0,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    },
+    {
+      "cells": [
+        "killed-1",
+        "0/1",
+        "ExitCode:137",
+        0,
+        "22d",
+        "<none>",
+        "<none>"
+      ]
+    }
+  ]
+}

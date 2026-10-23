@@ -1,0 +1,54 @@
+{
+  "columnDefinitions": [
+    {
+      "name": "Name",
+      "type": "string",
+      "format": "name",
+      "priority": 0
+    },
+    {
+      "name": "Status",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Completions",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Duration",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Age",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    }
+  ],
+  "rows": [
+    {
+      "cells": [
+        "backup-1",
+        "Complete",
+        "1/1",
+        "",
+        "22d"
+      ]
+    },
+    {
+      "cells": [
+        "manual-1",
+        "Running",
+        "0/1",
+        "",
+        "22d"
+      ]
+    }
+  ]
+}

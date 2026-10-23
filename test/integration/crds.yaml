@@ -1,0 +1,115 @@
+# Test CRDs for the ek9 integration tests.
+# run.sh applies this file, waits until the CRDs are established, and
+# then applies custom-resources.yaml.
+#
+# widgets has a printer column for each column type, a filter path, a
+# list path, a map path, and a column with priority 1.  It also has an
+# old served version without columns: ek9 must use the preferred
+# version v1.  gizmos is cluster-scoped and has no printer columns.
+# sprockets has printer columns, but no Age column.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: widgets.ek9.example.com
+spec:
+  group: ek9.example.com
+  scope: Namespaced
+  names:
+    plural: widgets
+    singular: widget
+    kind: Widget
+    shortNames: ["wdg"]
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: false
+      schema:
+        openAPIV3Schema:
+          type: object
+          x-kubernetes-preserve-unknown-fields: true
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Replicas
+          type: integer
+          jsonPath: .spec.replicas
+        - name: Ratio
+          type: number
+          jsonPath: .spec.ratio
+        - name: Enabled
+          type: boolean
+          jsonPath: .spec.enabled
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: Hosts
+          type: string
+          jsonPath: .spec.hosts[*]
+        - name: First Host
+          type: string
+          jsonPath: .spec.hosts[0]
+        - name: Labels
+          type: string
+          jsonPath: .metadata.labels
+        - name: Owner
+          type: string
+          jsonPath: .spec.owner
+          priority: 1
+        - name: Started
+          type: date
+          jsonPath: .status.startTime
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: gizmos.ek9.example.com
+spec:
+  group: ek9.example.com
+  scope: Cluster
+  names:
+    plural: gizmos
+    singular: gizmo
+    kind: Gizmo
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          x-kubernetes-preserve-unknown-fields: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sprockets.ek9.example.com
+spec:
+  group: ek9.example.com
+  scope: Namespaced
+  names:
+    plural: sprockets
+    singular: sprocket
+    kind: Sprocket
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          x-kubernetes-preserve-unknown-fields: true
+      additionalPrinterColumns:
+        - name: Size
+          type: string
+          jsonPath: .spec.size

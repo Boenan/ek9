@@ -1,0 +1,80 @@
+# Objects of the test CRDs in crds.yaml.
+# full has a value for each column.  empty has no values, so that the
+# test can compare the text of empty cells.  mixed has wrong value
+# types and a date that is not valid.  falsy has JSON false values,
+# a float in an integer column, and an empty date.
+apiVersion: ek9.example.com/v1
+kind: Widget
+metadata:
+  name: full
+  namespace: ek9-itest
+  labels:
+    tier: front
+spec:
+  replicas: 3
+  ratio: 1.5
+  enabled: true
+  hosts: ["a.example.com", "b.example.com"]
+  owner: team-a
+status:
+  phase: Running
+  startTime: "2026-01-01T00:00:00Z"
+  conditions:
+    - type: Synced
+      status: "False"
+    - type: Ready
+      status: "True"
+---
+apiVersion: ek9.example.com/v1
+kind: Widget
+metadata:
+  name: empty
+  namespace: ek9-itest
+spec: {}
+---
+apiVersion: ek9.example.com/v1
+kind: Widget
+metadata:
+  name: mixed
+  namespace: ek9-itest
+spec:
+  replicas: "three"
+  ratio: 2
+  enabled: "yes"
+  hosts: []
+  owner: 42
+status:
+  phase: {"z": "<a&b>", "nested": [1, 2.5, null, false]}
+  startTime: "not a date"
+---
+apiVersion: ek9.example.com/v1
+kind: Widget
+metadata:
+  name: falsy
+  namespace: ek9-itest
+  labels:
+    b: "2"
+    a: "1"
+spec:
+  replicas: 2.7
+  ratio: 0.1
+  enabled: false
+  hosts: ["only.example.com"]
+  owner: true
+status:
+  phase: false
+  startTime: ""
+  conditions: []
+---
+apiVersion: ek9.example.com/v1
+kind: Sprocket
+metadata:
+  name: sprocket-one
+  namespace: ek9-itest
+spec:
+  size: large
+---
+apiVersion: ek9.example.com/v1
+kind: Gizmo
+metadata:
+  name: gizmo-one

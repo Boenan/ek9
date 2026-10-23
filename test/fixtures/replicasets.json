@@ -1,0 +1,31 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    { "kind": "ReplicaSet",
+      "metadata": { "name": "web-7c5b8d65b8", "namespace": "team-a", "uid": "rs-1",
+                    "creationTimestamp": "2026-10-01T00:00:00Z",
+                    "ownerReferences": [ { "kind": "Deployment", "name": "web",
+                                           "uid": "dep-1", "controller": true } ] },
+      "spec": { "replicas": 3,
+                "selector": { "matchLabels": { "app": "web",
+                                               "pod-template-hash": "7c5b8d65b8" } } },
+      "status": { "replicas": 3, "readyReplicas": 3 } },
+    { "kind": "ReplicaSet",
+      "metadata": { "name": "web-6d4f9c7b5a", "namespace": "team-a", "uid": "rs-0",
+                    "creationTimestamp": "2026-09-01T00:00:00Z",
+                    "ownerReferences": [ { "kind": "Deployment", "name": "web",
+                                           "uid": "dep-1", "controller": true } ] },
+      "spec": { "replicas": 0,
+                "selector": { "matchLabels": { "app": "web",
+                                               "pod-template-hash": "6d4f9c7b5a" } } },
+      "status": { "replicas": 0 } },
+    { "kind": "ReplicaSet",
+      "metadata": { "name": "other-1", "namespace": "team-a", "uid": "rs-9",
+                    "creationTimestamp": "2026-09-01T00:00:00Z" },
+      "spec": { "replicas": 1,
+                "selector": { "matchLabels": { "app": "other" } } },
+      "status": { "replicas": 1, "readyReplicas": 0 } }
+  ],
+  "metadata": { "resourceVersion": "" }
+}

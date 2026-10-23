@@ -1,0 +1,87 @@
+# Build and test ek9.
+#
+# The unit tests use the fake kubectl in test/fixtures.  The
+# integration tests make a local kind cluster on the runner, as
+# test/integration/run.sh does on a developer machine.  They never use
+# a real cluster.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit tests (Emacs 30.2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: purcell/setup-emacs@master
+        with:
+          version: '30.2'
+
+      - uses: emacs-eask/setup-eask@master
+        with:
+          version: '0.12.9'
+
+      # ek9 has no dependencies, so "eask install-deps --dev" has no
+      # work to do.  The lint commands install their own tools.
+      #
+      # Do not use "eask run script" here.  setup-eask installs the
+      # packaged Eask binary.  Its "run script" runs the first word of
+      # a script as a Node.js module, so a script such as run.sh
+      # fails.  Thus the steps run the commands of the scripts directly.
+
+      - name: Byte-compile (a warning is an error)
+        run: |
+          eask clean elc
+          eask compile --strict
+          eask clean elc
+
+      - name: Checkdoc
+        run: eask lint checkdoc --strict
+
+      - name: package-lint
+        run: eask lint package --strict
+
+      # The command of the script "test" in Eask.
+      - name: Unit tests
+        run: eask test ert test/*-test.el
+
+  integration:
+    name: Integration tests (kind)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: purcell/setup-emacs@master
+        with:
+          version: '30.2'
+
+      - uses: emacs-eask/setup-eask@master
+        with:
+          version: '0.12.9'
+
+      # Install kind and kubectl only.  run.sh makes the cluster
+      # ek9-itest with its own kubeconfig.
+      - uses: helm/kind-action@v1
+        with:
+          install_only: true
+
+      # The command of the script "integration" in Eask.
+      - name: Integration tests
+        run: test/integration/run.sh

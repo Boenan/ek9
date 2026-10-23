@@ -1,0 +1,10 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    { "kind": "Namespace", "metadata": { "name": "default" } },
+    { "kind": "Namespace", "metadata": { "name": "kube-system" } },
+    { "kind": "Namespace", "metadata": { "name": "team-a" } }
+  ],
+  "metadata": { "resourceVersion": "" }
+}

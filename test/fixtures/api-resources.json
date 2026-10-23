@@ -1,0 +1,215 @@
+{
+  "kind": "APIResourceList",
+  "apiVersion": "v1",
+  "groupVersion": "",
+  "resources": [
+    {
+      "name": "pods",
+      "singularName": "pod",
+      "namespaced": true,
+      "version": "v1",
+      "kind": "Pod",
+      "verbs": [
+        "create",
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "update",
+        "watch"
+      ],
+      "shortNames": [
+        "po"
+      ],
+      "categories": [
+        "all"
+      ]
+    },
+    {
+      "name": "deployments",
+      "singularName": "deployment",
+      "namespaced": true,
+      "group": "apps",
+      "version": "v1",
+      "kind": "Deployment",
+      "verbs": [
+        "create",
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "update",
+        "watch"
+      ],
+      "shortNames": [
+        "deploy"
+      ],
+      "categories": [
+        "all"
+      ]
+    },
+    {
+      "name": "gizmos",
+      "singularName": "gizmo",
+      "namespaced": false,
+      "group": "ek9.example.com",
+      "version": "v1",
+      "kind": "Gizmo",
+      "verbs": [
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "create",
+        "update",
+        "watch"
+      ]
+    },
+    {
+      "name": "sprockets",
+      "singularName": "sprocket",
+      "namespaced": true,
+      "group": "ek9.example.com",
+      "version": "v1",
+      "kind": "Sprocket",
+      "verbs": [
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "create",
+        "update",
+        "watch"
+      ]
+    },
+    {
+      "name": "widgets",
+      "singularName": "widget",
+      "namespaced": true,
+      "group": "ek9.example.com",
+      "version": "v1",
+      "kind": "Widget",
+      "verbs": [
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "create",
+        "update",
+        "watch"
+      ],
+      "shortNames": [
+        "wdg"
+      ]
+    },
+    {
+      "name": "ingresses",
+      "singularName": "ingress",
+      "namespaced": true,
+      "group": "networking.k8s.io",
+      "version": "v1",
+      "kind": "Ingress",
+      "verbs": [
+        "create",
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "update",
+        "watch"
+      ],
+      "shortNames": [
+        "ing"
+      ]
+    },
+    {
+      "name": "widgets",
+      "singularName": "widget",
+      "namespaced": true,
+      "group": "other.example.com",
+      "version": "v2",
+      "kind": "Widget",
+      "verbs": [
+        "get",
+        "list"
+      ],
+      "shortNames": [
+        "po",
+        "ow"
+      ]
+    },
+    {
+      "name": "nodemetrics",
+      "singularName": "",
+      "namespaced": false,
+      "group": "metrics.k8s.io",
+      "version": "v1beta1",
+      "kind": "NodeMetrics",
+      "verbs": [
+        "get",
+        "list"
+      ]
+    },
+    {
+      "name": "persistentvolumeclaims",
+      "singularName": "persistentvolumeclaim",
+      "namespaced": true,
+      "version": "v1",
+      "kind": "PersistentVolumeClaim",
+      "verbs": [
+        "create",
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "update",
+        "watch"
+      ],
+      "shortNames": [
+        "pvc"
+      ]
+    },
+    {
+      "name": "componentstatuses",
+      "singularName": "componentstatus",
+      "namespaced": false,
+      "version": "v1",
+      "kind": "ComponentStatus",
+      "verbs": [
+        "get",
+        "list"
+      ],
+      "shortNames": [
+        "cs"
+      ]
+    },
+    {
+      "name": "events",
+      "singularName": "event",
+      "namespaced": true,
+      "group": "events.k8s.io",
+      "version": "v1",
+      "kind": "Event",
+      "verbs": [
+        "create",
+        "delete",
+        "deletecollection",
+        "get",
+        "list",
+        "patch",
+        "update",
+        "watch"
+      ],
+      "shortNames": [
+        "ev"
+      ]
+    }
+  ]
+}

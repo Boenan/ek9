@@ -1,0 +1,13 @@
+{
+  "kind": "Config",
+  "apiVersion": "v1",
+  "current-context": "dev",
+  "contexts": [
+    { "name": "dev", "context": { "cluster": "kind-dev", "user": "dev", "namespace": "team-a" } },
+    { "name": "prod", "context": { "cluster": "prod", "user": "prod" } },
+    { "name": "forbidden", "context": { "cluster": "prod", "user": "guest" } },
+    { "name": "nocluster", "context": { "cluster": "", "user": "guest" } }
+  ],
+  "clusters": [],
+  "users": []
+}

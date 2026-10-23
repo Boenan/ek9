@@ -1,0 +1,173 @@
+#!/bin/sh
+# Fake kubectl for ek9 unit tests.
+# The context "forbidden" makes each command fail like an RBAC error.
+# "fail" writes to stderr and exits with code 1.
+# "config view" prints the config.json fixture.
+# "get KIND" prints the KIND.json fixture.
+# "get KIND NAME -o yaml" prints a small YAML document.
+# "get KIND NAME -o json" prints the KIND-NAME.json fixture.
+# "get customresourcedefinitions NAME.aggregated.example.com" fails
+# with NotFound, as for the type of an aggregated API.
+# "get KIND -o json NAME" also prints the KIND-NAME.json fixture.
+# "port-forward TARGET PORTS" prints "Forwarding from" and waits.
+# An empty local port gives the local port 43517.  The remote port
+# 9999 fails as if the port is in use.  7777 prints an error line and
+# keeps running.  8888 loses the connection to the pod and exits.
+# "sleep SECONDS" waits, then prints "slept SECONDS".
+# "api-resources" prints the api-resources.json fixture.  The context
+# "no-crds" gives a list without CRD types.
+# "kubeconfig" prints the value of KUBECONFIG.
+# "logs" prints its arguments and two log lines, one with ANSI colors.
+# "replace --dry-run=client" reads YAML from stdin and prints JSON with
+# its kind and name.  YAML with "---" gives a List, as kubectl does.
+# YAML with "last-applied-configuration" also gives the annotation,
+# server fields, and values that JSON round trips must keep.  YAML
+# with "annotation-fail" also gives the label "annotation-fail".
+# "apply set-last-applied" reads JSON from stdin.  It fails if the
+# JSON contains "annotation-fail".  Otherwise it prints its arguments.
+# "replace" without a dry run prints the number of stdin lines, the
+# last stdin line, and its arguments.  YAML with "fail: true" makes it
+# fail.
+# "proxy --context CONTEXT --unix-socket=SOCKET" runs fake-proxy.el in
+# the Emacs of EK9_TEST_EMACS.  It serves the fixtures on SOCKET.  The
+# context "silent" gives a proxy that never gets ready.
+# All other arguments are printed back on stdout.
+
+dir=$(dirname "$0")
+
+case " $* " in
+    *" --context forbidden "*)
+        echo "Error from server (Forbidden): access denied" >&2
+        exit 1
+        ;;
+esac
+
+case "$1" in
+    fail)
+        echo "error: fake failure" >&2
+        exit 1
+        ;;
+    config)
+        cat "$dir/config.json"
+        ;;
+    get)
+        case "$2 $3" in
+            "customresourcedefinitions "*.aggregated.example.com)
+                echo "Error from server (NotFound): customresourcedefinitions.apiextensions.k8s.io \"$3\" not found" >&2
+                exit 1
+                ;;
+        esac
+        case "$3" in
+            -*|"")
+                case "$5" in
+                    -*|"") cat "$dir/$2.json" ;;
+                    *) cat "$dir/$2-$5.json" ;;
+                esac
+                ;;
+            *)
+                if [ "$5" = json ]; then
+                    cat "$dir/$2-$3.json"
+                else
+                    printf 'kind: Pod\nmetadata:\n  name: %s\n' "$3"
+                fi
+                ;;
+        esac
+        ;;
+    replace)
+        input=$(cat)
+        case " $* " in
+            *" --dry-run=client "*)
+                kind=$(printf '%s\n' "$input" | sed -n 's/^kind: *//p' | head -n 1)
+                name=$(printf '%s\n' "$input" | sed -n 's/^  name: *//p' | head -n 1)
+                if printf '%s\n' "$input" | grep -q '^---'; then
+                    printf '{"kind": "List", "items": []}\n'
+                elif printf '%s\n' "$input" | grep -q 'last-applied-configuration'; then
+                    labels='{}'
+                    if printf '%s\n' "$input" | grep -q 'annotation-fail'; then
+                        labels='{"annotation-fail": "true"}'
+                    fi
+                    printf '{"kind": "%s", "metadata": {"name": "%s", "labels": %s, ' "$kind" "$name" "$labels"
+                    printf '"resourceVersion": "7", "uid": "u-1", "generation": 2, '
+                    printf '"creationTimestamp": "2026-01-01T00:00:00Z", "managedFields": [], '
+                    printf '"annotations": {"kubectl.kubernetes.io/last-applied-configuration": "{}"}}, '
+                    printf '"spec": {"on": false, "none": null, "empty": {}, "list": []}}\n'
+                else
+                    printf '{"kind": "%s", "metadata": {"name": "%s"}}\n' "$kind" "$name"
+                fi
+                ;;
+            *)
+                if printf '%s\n' "$input" | grep -q '^fail: true'; then
+                    echo "error: apply conflict" >&2
+                    exit 1
+                fi
+                lines=$(printf '%s\n' "$input" | wc -l | tr -d ' ')
+                last=$(printf '%s\n' "$input" | tail -n 1)
+                echo "applied $lines lines ($last): $*"
+                ;;
+        esac
+        ;;
+    proxy)
+        [ "$3" = silent ] && exec sleep 30
+        socket=
+        for arg in "$@"; do
+            case "$arg" in
+                --unix-socket=*) socket=${arg#--unix-socket=} ;;
+            esac
+        done
+        exec "${EK9_TEST_EMACS:-emacs}" -Q --batch -l "$dir/fake-proxy.el" \
+             -f ek9-fake-proxy-main "$3" "$socket" "$dir"
+        ;;
+    apply)
+        input=$(cat)
+        case "$input" in
+            *annotation-fail*)
+                echo "error: annotation conflict" >&2
+                exit 1
+                ;;
+        esac
+        echo "$@"
+        ;;
+    port-forward)
+        remote=${3##*:}
+        local=${3%%:*}
+        [ -n "$local" ] || local=43517
+        case "$remote" in
+            9999)
+                echo "Unable to listen on port 9999: address already in use" >&2
+                echo "error: unable to listen on any of the requested ports: [{9999 9999}]" >&2
+                exit 1
+                ;;
+        esac
+        echo "Forwarding from 127.0.0.1:$local -> $remote"
+        case "$remote" in
+            7777)
+                echo "E1021 10:00:00.000000 1 portforward.go:413] an error occurred forwarding $local -> 7777: connection refused" >&2
+                ;;
+            8888)
+                echo "error: lost connection to pod" >&2
+                exit 1
+                ;;
+        esac
+        exec sleep 30
+        ;;
+    api-resources)
+        case " $* " in
+            *" --context no-crds "*) echo '{"kind": "APIResourceList", "resources": []}' ;;
+            *) cat "$dir/api-resources.json" ;;
+        esac
+        ;;
+    kubeconfig)
+        echo "KUBECONFIG=${KUBECONFIG:-}"
+        ;;
+    sleep)
+        sleep "$2"
+        echo "slept $2"
+        ;;
+    logs)
+        echo "args: $*"
+        printf 'line 1\n\033[31mline 2\033[0m\n'
+        ;;
+    *)
+        echo "$@"
+        ;;
+esac

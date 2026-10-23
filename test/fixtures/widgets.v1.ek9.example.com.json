@@ -1,0 +1,122 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "ek9.example.com/v1",
+      "kind": "Widget",
+      "metadata": {
+        "creationTimestamp": "2026-10-22T18:46:42Z",
+        "generation": 1,
+        "name": "empty",
+        "namespace": "ek9-itest",
+        "resourceVersion": "24269",
+        "uid": "e8d91f17-9c12-466c-9aae-566b9cd62ca3"
+      },
+      "spec": {}
+    },
+    {
+      "apiVersion": "ek9.example.com/v1",
+      "kind": "Widget",
+      "metadata": {
+        "creationTimestamp": "2026-10-22T18:47:26Z",
+        "generation": 1,
+        "labels": {
+          "a": "1",
+          "b": "2"
+        },
+        "name": "falsy",
+        "namespace": "ek9-itest",
+        "resourceVersion": "24338",
+        "uid": "64421a52-9699-46ce-b313-b7ab30ce1f17"
+      },
+      "spec": {
+        "enabled": false,
+        "hosts": [
+          "only.example.com"
+        ],
+        "owner": true,
+        "ratio": 0.1,
+        "replicas": 2.7
+      },
+      "status": {
+        "conditions": [],
+        "phase": false,
+        "startTime": ""
+      }
+    },
+    {
+      "apiVersion": "ek9.example.com/v1",
+      "kind": "Widget",
+      "metadata": {
+        "creationTimestamp": "2026-10-22T18:46:42Z",
+        "generation": 1,
+        "labels": {
+          "tier": "front"
+        },
+        "name": "full",
+        "namespace": "ek9-itest",
+        "resourceVersion": "24268",
+        "uid": "fea31cd3-85d1-4098-a54e-37f41892d7db"
+      },
+      "spec": {
+        "enabled": true,
+        "hosts": [
+          "a.example.com",
+          "b.example.com"
+        ],
+        "owner": "team-a",
+        "ratio": 1.5,
+        "replicas": 3
+      },
+      "status": {
+        "conditions": [
+          {
+            "status": "False",
+            "type": "Synced"
+          },
+          {
+            "status": "True",
+            "type": "Ready"
+          }
+        ],
+        "phase": "Running",
+        "startTime": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "apiVersion": "ek9.example.com/v1",
+      "kind": "Widget",
+      "metadata": {
+        "creationTimestamp": "2026-10-22T18:46:42Z",
+        "generation": 3,
+        "name": "mixed",
+        "namespace": "ek9-itest",
+        "resourceVersion": "24631",
+        "uid": "37f93e8c-5198-42cc-b0f9-963c63bcdc76"
+      },
+      "spec": {
+        "enabled": "yes",
+        "hosts": [],
+        "owner": 42,
+        "ratio": 2,
+        "replicas": "three"
+      },
+      "status": {
+        "phase": {
+          "nested": [
+            1,
+            2.5,
+            null,
+            false
+          ],
+          "z": "<a&b>"
+        },
+        "startTime": "not a date"
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {
+    "resourceVersion": ""
+  }
+}

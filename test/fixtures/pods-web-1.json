@@ -1,0 +1,36 @@
+{
+  "kind": "Pod",
+  "metadata": { "name": "web-1", "namespace": "team-a", "uid": "pod-uid-1",
+                "creationTimestamp": "2026-10-01T00:00:00Z" },
+  "spec": {
+    "initContainers": [
+      { "name": "migrate", "image": "migrate:1" },
+      { "name": "proxy", "image": "envoy:1.30", "restartPolicy": "Always",
+        "ports": [ { "containerPort": 9901, "protocol": "TCP" } ] }
+    ],
+    "containers": [
+      { "name": "app", "image": "web:2",
+        "ports": [ { "containerPort": 8080, "protocol": "TCP" },
+                   { "containerPort": 8125, "protocol": "UDP" } ] },
+      { "name": "worker", "image": "worker:2" }
+    ]
+  },
+  "status": {
+    "phase": "Running",
+    "initContainerStatuses": [
+      { "name": "migrate", "ready": false, "restartCount": 0,
+        "state": { "terminated": { "exitCode": 0, "reason": "Completed",
+                                   "startedAt": "2026-10-01T00:00:00Z" } } },
+      { "name": "proxy", "ready": true, "restartCount": 0, "started": true,
+        "state": { "running": { "startedAt": "2026-10-01T00:01:00Z" } } }
+    ],
+    "containerStatuses": [
+      { "name": "app", "ready": true, "restartCount": 0,
+        "state": { "running": { "startedAt": "2026-10-01T00:02:00Z" } } },
+      { "name": "worker", "ready": false, "restartCount": 4,
+        "lastState": { "terminated": { "exitCode": 1,
+                                       "finishedAt": "2026-10-01T00:05:00Z" } },
+        "state": { "waiting": { "reason": "CrashLoopBackOff" } } }
+    ]
+  }
+}

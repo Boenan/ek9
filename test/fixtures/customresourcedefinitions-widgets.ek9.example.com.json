@@ -1,0 +1,139 @@
+{
+  "apiVersion": "apiextensions.k8s.io/v1",
+  "kind": "CustomResourceDefinition",
+  "metadata": {
+    "creationTimestamp": "2026-10-22T18:46:39Z",
+    "generation": 1,
+    "name": "widgets.ek9.example.com",
+    "resourceVersion": "24262",
+    "uid": "6a4f0dc5-08d4-4564-b70f-15c0e4a8e38d"
+  },
+  "spec": {
+    "conversion": {
+      "strategy": "None"
+    },
+    "group": "ek9.example.com",
+    "names": {
+      "kind": "Widget",
+      "listKind": "WidgetList",
+      "plural": "widgets",
+      "shortNames": [
+        "wdg"
+      ],
+      "singular": "widget"
+    },
+    "scope": "Namespaced",
+    "versions": [
+      {
+        "name": "v1alpha1",
+        "schema": {
+          "openAPIV3Schema": {
+            "type": "object",
+            "x-kubernetes-preserve-unknown-fields": true
+          }
+        },
+        "served": true,
+        "storage": false
+      },
+      {
+        "additionalPrinterColumns": [
+          {
+            "jsonPath": ".status.phase",
+            "name": "Phase",
+            "type": "string"
+          },
+          {
+            "jsonPath": ".spec.replicas",
+            "name": "Replicas",
+            "type": "integer"
+          },
+          {
+            "jsonPath": ".spec.ratio",
+            "name": "Ratio",
+            "type": "number"
+          },
+          {
+            "jsonPath": ".spec.enabled",
+            "name": "Enabled",
+            "type": "boolean"
+          },
+          {
+            "jsonPath": ".status.conditions[?(@.type==\"Ready\")].status",
+            "name": "Ready",
+            "type": "string"
+          },
+          {
+            "jsonPath": ".spec.hosts[*]",
+            "name": "Hosts",
+            "type": "string"
+          },
+          {
+            "jsonPath": ".spec.hosts[0]",
+            "name": "First Host",
+            "type": "string"
+          },
+          {
+            "jsonPath": ".metadata.labels",
+            "name": "Labels",
+            "type": "string"
+          },
+          {
+            "jsonPath": ".spec.owner",
+            "name": "Owner",
+            "priority": 1,
+            "type": "string"
+          },
+          {
+            "jsonPath": ".status.startTime",
+            "name": "Started",
+            "type": "date"
+          },
+          {
+            "jsonPath": ".metadata.creationTimestamp",
+            "name": "Age",
+            "type": "date"
+          }
+        ],
+        "name": "v1",
+        "schema": {
+          "openAPIV3Schema": {
+            "type": "object",
+            "x-kubernetes-preserve-unknown-fields": true
+          }
+        },
+        "served": true,
+        "storage": true
+      }
+    ]
+  },
+  "status": {
+    "acceptedNames": {
+      "kind": "Widget",
+      "listKind": "WidgetList",
+      "plural": "widgets",
+      "shortNames": [
+        "wdg"
+      ],
+      "singular": "widget"
+    },
+    "conditions": [
+      {
+        "lastTransitionTime": "2026-10-22T18:46:39Z",
+        "message": "no conflicts found",
+        "reason": "NoConflicts",
+        "status": "True",
+        "type": "NamesAccepted"
+      },
+      {
+        "lastTransitionTime": "2026-10-22T18:46:39Z",
+        "message": "the initial names have been accepted",
+        "reason": "InitialNamesAccepted",
+        "status": "True",
+        "type": "Established"
+      }
+    ],
+    "storedVersions": [
+      "v1"
+    ]
+  }
+}

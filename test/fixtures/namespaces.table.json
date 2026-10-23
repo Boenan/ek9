@@ -1,0 +1,45 @@
+{
+  "columnDefinitions": [
+    {
+      "name": "Name",
+      "type": "string",
+      "format": "name",
+      "priority": 0
+    },
+    {
+      "name": "Status",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Age",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    }
+  ],
+  "rows": [
+    {
+      "cells": [
+        "default",
+        "",
+        ""
+      ]
+    },
+    {
+      "cells": [
+        "kube-system",
+        "",
+        ""
+      ]
+    },
+    {
+      "cells": [
+        "team-a",
+        "",
+        ""
+      ]
+    }
+  ]
+}

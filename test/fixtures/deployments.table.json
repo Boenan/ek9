@@ -1,0 +1,52 @@
+{
+  "columnDefinitions": [
+    {
+      "name": "Name",
+      "type": "string",
+      "format": "name",
+      "priority": 0
+    },
+    {
+      "name": "Ready",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Up-To-Date",
+      "type": "integer",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Available",
+      "type": "integer",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Age",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Containers",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    }
+  ],
+  "rows": [
+    {
+      "cells": [
+        "web",
+        "3/3",
+        3,
+        3,
+        "22d",
+        ""
+      ]
+    }
+  ]
+}

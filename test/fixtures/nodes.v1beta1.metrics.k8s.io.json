@@ -1,0 +1,13 @@
+{
+  "kind": "NodeMetricsList",
+  "apiVersion": "metrics.k8s.io/v1beta1",
+  "metadata": {},
+  "items": [
+    {
+      "metadata": { "name": "kind-control-plane" },
+      "timestamp": "2026-10-23T19:22:07Z",
+      "window": "10.028s",
+      "usage": { "cpu": "655225767n", "memory": "826220Ki" }
+    }
+  ]
+}

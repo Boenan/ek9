@@ -1,0 +1,63 @@
+{
+  "columnDefinitions": [
+    {
+      "name": "Name",
+      "type": "string",
+      "format": "name",
+      "priority": 0
+    },
+    {
+      "name": "Desired",
+      "type": "integer",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Current",
+      "type": "integer",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Ready",
+      "type": "integer",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Age",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    }
+  ],
+  "rows": [
+    {
+      "cells": [
+        "web-7c5b8d65b8",
+        3,
+        3,
+        3,
+        "22d"
+      ]
+    },
+    {
+      "cells": [
+        "web-6d4f9c7b5a",
+        0,
+        0,
+        0,
+        "52d"
+      ]
+    },
+    {
+      "cells": [
+        "other-1",
+        1,
+        1,
+        0,
+        "52d"
+      ]
+    }
+  ]
+}

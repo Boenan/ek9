@@ -1,0 +1,20 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    { "kind": "Job",
+      "metadata": { "name": "backup-1", "namespace": "team-a",
+                    "creationTimestamp": "2026-10-01T00:00:00Z",
+                    "ownerReferences": [ { "kind": "CronJob", "name": "backup",
+                                           "uid": "cj-1", "controller": true } ] },
+      "spec": { "completions": 1 },
+      "status": { "succeeded": 1,
+                  "conditions": [ { "type": "Complete", "status": "True" } ] } },
+    { "kind": "Job",
+      "metadata": { "name": "manual-1", "namespace": "team-a",
+                    "creationTimestamp": "2026-10-01T00:00:00Z" },
+      "spec": { "completions": 1 },
+      "status": {} }
+  ],
+  "metadata": { "resourceVersion": "" }
+}

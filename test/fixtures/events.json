@@ -1,0 +1,23 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "kind": "Event",
+      "metadata": { "name": "old.1", "namespace": "team-a" },
+      "type": "Normal", "reason": "Pulled", "count": 1,
+      "lastTimestamp": "2026-10-01T00:00:00Z",
+      "involvedObject": { "kind": "Pod", "name": "web-1" },
+      "message": "Image pulled"
+    },
+    {
+      "kind": "Event",
+      "metadata": { "name": "new.2", "namespace": "team-a" },
+      "type": "Warning", "reason": "BackOff", "count": 1,
+      "lastTimestamp": "2026-10-02T00:00:00Z",
+      "involvedObject": { "kind": "Pod", "name": "web-2" },
+      "message": "Back-off restarting failed container"
+    }
+  ],
+  "metadata": { "resourceVersion": "" }
+}

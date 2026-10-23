@@ -1,0 +1,54 @@
+{
+  "columnDefinitions": [
+    {
+      "name": "Last Seen",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Type",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Reason",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Object",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Message",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    }
+  ],
+  "rows": [
+    {
+      "cells": [
+        "22d",
+        "Normal",
+        "Pulled",
+        "pod/web-1",
+        "Image pulled"
+      ]
+    },
+    {
+      "cells": [
+        "21d",
+        "Warning",
+        "BackOff",
+        "pod/web-2",
+        "Back-off restarting failed container"
+      ]
+    }
+  ]
+}

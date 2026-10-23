@@ -1,0 +1,6 @@
+.eask/
+dist/
+*.elc
+*-autoloads.el
+ek9-pkg.el
+test/integration/kubeconfig

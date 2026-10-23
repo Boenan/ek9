@@ -1,0 +1,142 @@
+{
+  "columnDefinitions": [
+    {
+      "name": "Name",
+      "type": "string",
+      "format": "name",
+      "priority": 0
+    },
+    {
+      "name": "Phase",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Replicas",
+      "type": "integer",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Ratio",
+      "type": "number",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Enabled",
+      "type": "boolean",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Ready",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Hosts",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "First Host",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Labels",
+      "type": "string",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Owner",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    },
+    {
+      "name": "Started",
+      "type": "date",
+      "format": "",
+      "priority": 0
+    },
+    {
+      "name": "Age",
+      "type": "date",
+      "format": "",
+      "priority": 0
+    }
+  ],
+  "rows": [
+    {
+      "cells": [
+        "empty",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "17h"
+      ]
+    },
+    {
+      "cells": [
+        "falsy",
+        "false",
+        2,
+        0.1,
+        false,
+        null,
+        "only.example.com",
+        "only.example.com",
+        "{\"a\":\"1\",\"b\":\"2\"}",
+        "true",
+        "<unknown>",
+        "17h"
+      ]
+    },
+    {
+      "cells": [
+        "full",
+        "Running",
+        3,
+        1.5,
+        true,
+        "True",
+        "a.example.com",
+        "a.example.com",
+        "{\"tier\":\"front\"}",
+        "team-a",
+        "295d",
+        "17h"
+      ]
+    },
+    {
+      "cells": [
+        "mixed",
+        "{\"nested\":[1,2.5,null,false],\"z\":\"\\u003ca\\u0026b\\u003e\"}",
+        null,
+        2,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "42",
+        "<invalid>",
+        "17h"
+      ]
+    }
+  ]
+}
