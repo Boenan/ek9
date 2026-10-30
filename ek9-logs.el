@@ -19,6 +19,22 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; This file streams the logs of a pod container into a buffer.  The
+;; buffer has one stream at a time.  When point is at the end of the
+;; buffer, point stays at the end while new lines arrive.  The user can
+;; stop the stream and start it again.  The old lines stay in the
+;; buffer, and the new stream adds the lines after the last line.
+;;
+;; ek9 always asks kubectl for timestamps.  The timestamps come from
+;; the node, so ek9 does not use the local clock.  A new stream after
+;; a stop starts at the timestamp of the last line, and ek9 drops the
+;; lines that it showed before.  ek9 removes the timestamps from the
+;; text if the user did not turn them on.
+
+;;; Code:
+
 (require 'cl-lib)
 (require 'ansi-color)
 (require 'seq)
@@ -65,11 +81,11 @@ ek9 removes the oldest lines when there are more lines."
   "Number of lines in the logs buffer.")
 
 (defvar-local ek9-logs--stopped nil
-  "Non-nil if the user stopped the log sream.")
+  "Non-nil if the user stopped the log stream.")
 
 (defvar-local ek9-logs--last-time nil
   "The time key of the last log line in the buffer, or nil.
-See `ek9-logs--time-key.'")
+See `ek9-logs--time-key'.")
 
 (defvar-local ek9-logs--skip-until nil
   "Drop the log lines up to this time key, or nil.
@@ -79,7 +95,7 @@ ek9 drops them until the first newer line arrives.")
 (defvar-local ek9-logs--partial ""
   "The start of a log line that did not end yet.")
 
-(defconst ek9-logs-timestamp-regexp
+(defconst ek9-logs--timestamp-regexp
   "\\`\\([0-9]+-[0-9]+-[0-9]+T[0-9]+:[0-9]+:[0-9]+\\)\\(?:\\.\\([0-9]+\\)\\)?Z "
   "Regexp for the timestamp at the start of a log line.
 Group 1 is the time in whole seconds, and group 2 is the fraction.")
@@ -97,11 +113,14 @@ time, and not the last `ek9-logs-tail-lines' lines."
           (if ek9-logs--previous
               (list "--previous")
             (list "--follow"))
-	  (if since
-	      (list (format "--since-time=%sZ"
-			    (substring since 0 (string-search "." sunce))))
-	    (list (format "--tail=%d" ek9-logs-tail-lines)))
-	  (list "--timestamps")
+          ;; The API accepts only whole seconds.  The stream gives
+          ;; the lines of the full second again, and
+          ;; `ek9-logs--skip-until' drops them.
+          (if since
+              (list (format "--since-time=%sZ"
+                            (substring since 0 (string-search "." since))))
+            (list (format "--tail=%d" ek9-logs-tail-lines)))
+          (list "--timestamps")
           ek9-logs--context-args))
 
 (defun ek9-logs--time-key (seconds fraction)
@@ -191,7 +210,7 @@ the windows where point is at the end."
   (let ((inhibit-read-only t))
     (erase-buffer))
   (setq ek9-logs--line-count 0
-	ek9-logs--last-time nil
+        ek9-logs--last-time nil
         ansi-color-context nil)
   (ek9-logs--stream))
 

@@ -1,4 +1,4 @@
- #!/bin/sh
+#!/bin/sh
 # Fake kubectl for ek9 unit tests.
 # The context "forbidden" makes each command fail like an RBAC error.
 # "fail" writes to stderr and exits with code 1.
