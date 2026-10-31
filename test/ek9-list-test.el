@@ -439,9 +439,9 @@ Return the list buffer."
               (ek9-list-up))
             (with-current-buffer deployments
               ;; Change the name, so that RET opens a different buffer.
-              (setf (alist-get 'name (alist-get 'metadata
-                                                (ek9-list-item-at-point)))
-                    "web-2")
+              (setcdr (assq 'name (alist-get 'metadata
+                                             (ek9-list-item-at-point)))
+                      "web-2")
               (setq second (ek9-list-drill-down)))
             (should-not (eq first second))
             (should-not (buffer-live-p first))
@@ -462,8 +462,8 @@ Return the first child."
       (ek9-list-up))
     (funcall setup first)
     (with-current-buffer deployments
-      (setf (alist-get 'name (alist-get 'metadata (ek9-list-item-at-point)))
-            "web-2")
+      (setcdr (assq 'name (alist-get 'metadata (ek9-list-item-at-point)))
+              "web-2")
       (ek9-list-drill-down))
     first))
 

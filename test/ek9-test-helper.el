@@ -44,9 +44,12 @@ TIMEOUT is 5 seconds by default.  Signal an error on timeout."
         (error "Timeout while waiting in test"))
       (accept-process-output nil 0.05))))
 
-(load (expand-file-name "fixtures/fake-proxy.el"
-                       (file-name-directory (macroexp-file-name)))
-      nil t)
+;; Load the fake proxy at compile time too.  Then the compiler knows
+;; its functions and its special variables.
+(eval-and-compile
+  (load (expand-file-name "fixtures/fake-proxy.el"
+                          (file-name-directory (macroexp-file-name)))
+        nil t))
 
 (defun ek9-test--parse-table (table)
   "Return the exact JSON TABLE as `ek9-proxy-parse-table' gives it."
