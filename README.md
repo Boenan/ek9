@@ -14,9 +14,18 @@ Thus, a list refresh is fast, and the lists show the same columns as `kubectl ge
 
 ## Installation
 
+Use latest:
 ```elisp
-(package-vc-install "https://github.com/Boenan/ek9")
+(use-package ek9
+  :vc (:url "https://github.com/Boenan/ek9" :rev :newest))
 ```
+
+Or with pin version:
+```elisp
+(use-package ek9
+  :vc (:url "https://github.com/Boenan/ek9" :rev "<version>"))
+```
+
 
 ## Usage
 
