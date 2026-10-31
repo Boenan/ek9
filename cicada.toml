@@ -1,5 +1,5 @@
 [settings]
-release_branches = ["main", "release-tool"]
+release_branches = ["main"]
 default_scope = "ek9"
 
 [forge]
