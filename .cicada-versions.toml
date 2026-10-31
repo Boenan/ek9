@@ -1,2 +1,5 @@
+# Managed by cicada. A version and nothing else (#1).
+# Hand-edit upwards to cut a release by hand; editing downwards is refused (#76).
+
 [packages.ek9]
-version = "0.1.0"
+version = "0.1.1"
