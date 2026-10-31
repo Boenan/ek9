@@ -8,6 +8,8 @@
 ;;; Code:
 
 (require 'ert)
+(require 'display-line-numbers)
+(require 'face-remap)
 (require 'ek9)
 (require 'ek9-test-helper
          (expand-file-name "ek9-test-helper.el"
