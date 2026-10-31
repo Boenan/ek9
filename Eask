@@ -1,7 +1,7 @@
 ;; -*- mode: eask; lexical-binding: t -*-
 
 (package "ek9"
-         "0.1.1" ; x-cicada-version
+         "0.1.2" ; x-cicada-version
          "Kubernetes client similar to k9s")
 
 (website-url "https://github.com/Boenan/ek9")

@@ -4,7 +4,7 @@
 
 ;; Author: Fabian Waxin <fabian.waxin@gmail.com>
 ;; URL: https://github.com/Boenan/ek9
-;; Version: 0.1.1
+;; Version: 0.1.2
 ;; Package-Requires: ((emacs "30.2"))
 ;; Keywords: tools
 ;; SPDX-License-Identifier: GPL-3.0-or-later

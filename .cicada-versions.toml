@@ -2,4 +2,4 @@
 # Hand-edit upwards to cut a release by hand; editing downwards is refused (#76).
 
 [packages.ek9]
-version = "0.1.1"
+version = "0.1.2"
