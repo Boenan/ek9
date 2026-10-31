@@ -1,0 +1,22 @@
+[settings]
+release_branches = ["main"]
+default_scope = "ek9"
+
+[forge]
+kind = "github"
+
+[packages.ek9]
+path       = "."
+tag_format = "{version}"
+changelog  = "CHANGELOG.md"
+
+[[packages.ek9.updaters]]
+kind = "generic"
+path = "ek9.el"
+edit = { marker = ";; Version:" }
+
+[[packages.ek9.updaters]]
+kind = "generic"
+path = "Eask"
+edit = { marker = "x-cicada-version" }
+  

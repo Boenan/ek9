@@ -44,9 +44,12 @@ The logs buffer is current in BODY.  Kill it after BODY."
     (should (string-match-p
              (concat "args: logs nginx-7c5b8d65b8-abcde --container nginx"
                      " --namespace default --follow --tail=200"
-                     " --context dev")
+                     " --timestamps --context dev")
              (buffer-string)))
+    ;; Timestamps are off, so the buffer does not show them.
+    (should (string-match-p "^args: " (buffer-string)))
     (should (string-match-p "^line 1$" (buffer-string)))
+    (should-not (string-match-p "2026-10-30T" (buffer-string)))
     (should buffer-read-only)))
 
 (ert-deftest ek9-logs-applies-ansi-colors ()
@@ -60,13 +63,49 @@ The logs buffer is current in BODY.  Kill it after BODY."
   (ek9-test--with-logs "nginx-7c5b8d65b8-abcde" "nginx"
     (ek9-logs-toggle-timestamps)
     (ek9-test--wait-for-stream-end)
-    (should (string-match-p "--timestamps" (buffer-string)))
+    (should (string-match-p "^2026-10-30T05:00:01Z line 1$" (buffer-string)))
     (ek9-logs-toggle-previous)
     (ek9-test--wait-for-stream-end)
     (should (string-match-p "--previous" (buffer-string)))
     (should-not (string-match-p "--follow" (buffer-string)))
     (should (string-match-p "\\[previous\\]"
                             (substring-no-properties (ek9-logs--tab-line))))))
+
+(ert-deftest ek9-logs-toggle-stream ()
+  (ek9-test--with-logs "nginx-7c5b8d65b8-abcde" "nginx"
+    (should (equal ek9-logs--last-time "2026-10-30T05:00:01.000000002"))
+    ;; The fake stream ended.  Make it look like a live stream.
+    (let ((ek9-kubectl-executable "sleep"))
+      (setq ek9-logs--process (ek9-process-stream '("10") #'ignore #'ignore)))
+    ;; Stop: the process ends and the old lines stay.
+    (let ((process ek9-logs--process))
+      (ek9-logs-toggle-stream)
+      (should-not (process-live-p process)))
+    (should ek9-logs--stopped)
+    (should (string-match-p "Log stream stopped" (buffer-string)))
+    (should (string-match-p "Stopped"
+                            (substring-no-properties (ek9-logs--tab-line))))
+    ;; Start again: start at the second of the last line, and drop the
+    ;; lines that the buffer has.
+    (ek9-logs-toggle-stream)
+    (should-not ek9-logs--stopped)
+    (ek9-test--wait-until
+     (lambda () (string-match-p "^line 3$" (buffer-string))))
+    (should (string-match-p "Log stream started again" (buffer-string)))
+    (should (string-match-p "--since-time=2026-10-30T05:00:01Z --timestamps"
+                            (buffer-string)))
+    (should (= (how-many "^line 2$" (point-min) (point-max)) 1))
+    (should (equal ek9-logs--last-time "2026-10-30T05:00:02.000000000"))))
+
+(ert-deftest ek9-logs-joins-split-lines ()
+  (with-temp-buffer
+    (ek9-logs-mode)
+    (ek9-logs--output "2026-10-30T05:00:01.5Z first li")
+    (should (equal (buffer-string) ""))
+    (ek9-logs--output "ne\r\nerror without timestamp\n2026-10-30T05:00:02Z x")
+    (should (equal (buffer-string) "first line\nerror without timestamp\n"))
+    (should (equal ek9-logs--last-time "2026-10-30T05:00:01.500000000"))
+    (should (equal ek9-logs--partial "2026-10-30T05:00:02Z x"))))
 
 (ert-deftest ek9-logs-read-container ()
   ;; One container: no question.
