@@ -2,6 +2,14 @@
 
 <!-- cicada:insert -->
 
+## 0.1.2 (2026-10-31)
+
+### Bug Fixes
+
+* warning proxy message (#4) ([026d13b](https://github.com/Boenan/ek9/commit/026d13be76ce546c199dd6a2d9cb55f41a4cfa5c))
+
+[Compare with 0.1.1](https://github.com/Boenan/ek9/compare/0.1.1...0.1.2)
+
 ## 0.1.1 (2026-10-31)
 
 ### Bug Fixes
