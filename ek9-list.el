@@ -269,6 +269,18 @@ buffer shows no rows.")
   "ID of the row at point before the last reset, or nil.
 The next successful refresh moves point back to this row.")
 
+(defvar-local ek9-list--printed nil
+  "The rows that the buffer shows, or nil.
+The value is (SORT-KEY HEADER . ENTRIES): the sort key, the header
+line, and the entries before the sort.  `ek9-list--render' does not
+print the same rows again.")
+
+(defvar-local ek9-list--render-pending nil
+  "Non-nil if a background update did not render the buffer.
+A render erases the buffer, and that removes the mark.  So while the
+mark is active, a background update only sets this variable.  See
+`ek9-list--render-soon'.")
+
 (defvar ek9-list--timer nil
   "Timer that refreshes the visible list buffers.")
 
@@ -561,7 +573,10 @@ breaks.  See `ek9-list-filter'."
 
 (defun ek9-list--render ()
   "Show the current items in the buffer.
-Keep the row at point in each window that shows the buffer."
+Keep the row at point in each window that shows the buffer.  If the
+rows, their faces, the columns, and the sort are the same as in the
+buffer, do not print the rows again.  A print erases the buffer: it
+removes the mark and makes Emacs draw the window again."
   (let* ((columns (ek9-list--current-columns))
          (entries (mapcar (lambda (item) (ek9-list--entry columns item))
                           ek9-list--items))
@@ -595,13 +610,19 @@ Keep the row at point in each window that shows the buffer."
             ek9-list--widths widths
             tabulated-list-format (ek9-list--format columns widths))
       (tabulated-list-init-header))
-    (setq tabulated-list-entries (seq-filter #'ek9-list--match-p entries))
-    ;; Do not use the UPDATE argument: it keeps a row with the same ID
-    ;; even when its text or its face changed.
-    (let ((tabulated-list-sort-key (and (assoc (car tabulated-list-sort-key)
-                                               columns)
-                                        tabulated-list-sort-key)))
-      (tabulated-list-print t))
+    (let* ((shown (seq-filter #'ek9-list--match-p entries))
+           (sort-key (and (assoc (car tabulated-list-sort-key) columns)
+                          tabulated-list-sort-key))
+           (printed (cons sort-key (cons header-line-format shown))))
+      (unless (equal-including-properties printed ek9-list--printed)
+        (setq tabulated-list-entries shown)
+        ;; Do not use the UPDATE argument: it keeps a row with the same
+        ;; ID even when its text or its face changed.
+        (let ((tabulated-list-sort-key sort-key))
+          (tabulated-list-print t))
+        ;; `tabulated-list-print' sorts the list of entries in place.
+        (setq ek9-list--printed (cons sort-key (cons header-line-format
+                                                     (copy-sequence shown))))))
     (unless (overlayp ek9-list--empty-overlay)
       (setq ek9-list--empty-overlay (make-overlay (point-min) (point-min))))
     (overlay-put ek9-list--empty-overlay 'after-string
@@ -705,6 +726,34 @@ After a server table, start a watch from its resourceVersion."
     (ek9-list--start-watch)
     (ek9-list--refresh-metrics)))
 
+(defun ek9-list--restore-row ()
+  "Move point to the row of `ek9-list--restore-id', if it is set."
+  (when-let* ((id (prog1 ek9-list--restore-id
+                    (setq ek9-list--restore-id nil)))
+              (position (ek9-list--find-id id)))
+    (goto-char position)
+    (dolist (window (get-buffer-window-list nil nil t))
+      (set-window-point window position))))
+
+(defun ek9-list--render-soon ()
+  "Render the buffer for a background update.
+If the mark is active, for example while the user selects text to
+copy, do not render: a render removes the mark.  Render when the mark
+is not active any more, see `ek9-list--render-pending-now'."
+  (if mark-active
+      (setq ek9-list--render-pending t)
+    (setq ek9-list--render-pending nil)
+    (ek9-list--render)
+    (ek9-list--restore-row)))
+
+(defun ek9-list--render-pending-now ()
+  "Render the buffer if a background update did not render it.
+Run from `deactivate-mark-hook'."
+  (when ek9-list--render-pending
+    (setq ek9-list--render-pending nil)
+    (ek9-list--render)
+    (ek9-list--restore-row)))
+
 (defun ek9-list--update (items)
   "Replace the items of the buffer with ITEMS."
   (let* ((items (ek9-list--owned items))
@@ -715,13 +764,7 @@ After a server table, start a watch from its resourceVersion."
           ek9-list--index index
           ek9-list--error nil
           ek9-list--loaded t)
-    (ek9-list--render)
-    (when-let* ((id (prog1 ek9-list--restore-id
-                      (setq ek9-list--restore-id nil)))
-                (position (ek9-list--find-id id)))
-      (goto-char position)
-      (dolist (window (get-buffer-window-list nil nil t))
-        (set-window-point window position)))))
+    (ek9-list--render-soon)))
 
 (defun ek9-list--set-error (message)
   "Show the error MESSAGE in the tab line.  Keep the old rows."
@@ -784,7 +827,7 @@ The extra arguments of a drill-down buffer become the query, see
 (defun ek9-list--receive-metrics (json)
   "Show the metrics JSON in the buffer."
   (setq ek9-list--metrics (ek9-metrics-index json))
-  (ek9-list--render))
+  (ek9-list--render-soon))
 
 (defconst ek9-list--metrics-missing-delay 300
   "Seconds to wait for the next read after the metrics API was missing.
@@ -801,7 +844,7 @@ metrics-server starts again."
     (setq ek9-list--metrics-time (+ (float-time) ek9-list--metrics-missing-delay))
     (when ek9-list--metrics
       (setq ek9-list--metrics nil)
-      (ek9-list--render))))
+      (ek9-list--render-soon))))
 
 (defun ek9-list--refresh-metrics ()
   "Read the metrics of the buffer, if `ek9-list--metrics-due-p'."
@@ -927,7 +970,7 @@ All watch events in this time give one render."
                               (when (buffer-live-p buffer)
                                 (with-current-buffer buffer
                                   (setq ek9-list--render-timer nil)
-                                  (ek9-list--render)))))))))
+                                  (ek9-list--render-soon)))))))))
 
 (defun ek9-list--watch-event (event)
   "Apply the watch EVENT to the items of the buffer.
@@ -1076,7 +1119,7 @@ Read the metrics after `ek9-metrics-interval'."
                     ek9-watch-reload-interval))
            (ek9-list-refresh))
           ((ek9-list--time-columns-p)
-           (ek9-list--render)))))
+           (ek9-list--render-soon)))))
 
 (defun ek9-list--tick ()
   "Update the visible list buffers, see `ek9-list--tick-buffer'.
@@ -1442,6 +1485,7 @@ argument REFRESH, load the contexts from kubeconfig again."
   ;; the size of the window.
   (add-hook 'text-scale-mode-hook #'ek9-list--refit nil t)
   (add-hook 'display-line-numbers-mode-hook #'ek9-list--refit nil t)
+  (add-hook 'deactivate-mark-hook #'ek9-list--render-pending-now nil t)
   (add-hook 'kill-buffer-hook #'ek9-list--kill-process nil t))
 
 (defun ek9-list--buffer-name (name spec)

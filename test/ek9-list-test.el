@@ -44,6 +44,76 @@ The pods buffer is current in BODY.  Kill it after BODY."
     (should (equal (car (aref tabulated-list-format 0)) "NAME"))
     (should (timerp ek9-list--timer))))
 
+(ert-deftest ek9-list-keeps-mark-during-background-update ()
+  (ek9-test--with-pods-buffer
+    (let ((transient-mark-mode t)
+          (text (buffer-string)))
+      (goto-char (point-min))
+      (forward-line 1)
+      (push-mark (point) t t)
+      (forward-line 2)
+      (should mark-active)
+      (let ((mark (mark)))
+        ;; A background update with one row less does not render.
+        (ek9-list--update (cdr ek9-list--items))
+        (should mark-active)
+        (should (= (mark) mark))
+        (should (equal (buffer-string) text))
+        (should ek9-list--render-pending)
+        ;; The other background renders wait too.
+        (ek9-list--receive-metrics nil)
+        (should (equal (buffer-string) text)))
+      ;; When the mark goes off, the buffer shows the update.
+      (deactivate-mark)
+      (should-not ek9-list--render-pending)
+      (should (= (length tabulated-list-entries) 7))
+      (should-not (equal (buffer-string) text)))))
+
+(ert-deftest ek9-list-render-skips-same-rows ()
+  (ek9-test--with-pods-buffer
+    (let ((tick (buffer-modified-tick)))
+      ;; The same rows: the buffer does not change, and the mark stays.
+      (let ((transient-mark-mode t))
+        (push-mark (point) t t)
+        (ek9-list--render)
+        (ek9-list--render-soon)
+        (should mark-active)
+        (deactivate-mark))
+      (should (= (buffer-modified-tick) tick))
+      ;; Another sort prints the rows.
+      (setq tabulated-list-sort-key (cons "NAME" t))
+      (ek9-list--render)
+      (should (> (buffer-modified-tick) tick))
+      (setq tick (buffer-modified-tick))
+      ;; Another filter prints the rows.
+      (ek9-list-filter "crashloop")
+      (should (> (buffer-modified-tick) tick))
+      (should (equal (ek9-test--row-ids) '("default/api-5f9c-xyz"))))))
+
+(ert-deftest ek9-list-render-prints-new-face ()
+  (ek9-test--with-pods-buffer
+    (let ((tick (buffer-modified-tick)))
+      ;; The same text with another face prints the rows.
+      (cl-letf* ((old (symbol-function 'ek9-list--entry))
+                 ((symbol-function 'ek9-list--entry)
+                  (lambda (columns item)
+                    (let ((entry (funcall old columns item)))
+                      (list (car entry)
+                            (vconcat (mapcar (lambda (value)
+                                               (propertize (substring-no-properties value)
+                                                           'face 'bold))
+                                             (cadr entry))))))))
+        (ek9-list--render))
+      (should (> (buffer-modified-tick) tick)))))
+
+(ert-deftest ek9-list-renders-without-mark ()
+  (ek9-test--with-pods-buffer
+    (let ((transient-mark-mode t))
+      (deactivate-mark)
+      (ek9-list--update (cdr ek9-list--items))
+      (should-not ek9-list--render-pending)
+      (should (= (length tabulated-list-entries) 7)))))
+
 (ert-deftest ek9-list-tab-line-shows-state ()
   (ek9-test--with-pods-buffer
     (let ((line (substring-no-properties (ek9-list--tab-line))))

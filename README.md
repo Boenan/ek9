@@ -34,6 +34,8 @@ ek9 does not change the current context in your kubeconfig.
 
 Push `?` in a list to see all keys.
 
+A list updates itself in the background. It draws the rows again only when the text or the colors change. While the mark is active (for example after `C-SPC`), the list does not update, so you can select and copy text. The list shows the updates when the mark goes off.
+
 | Key | Action |
 |---|---|
 | `:` | Select a resource type, for example `deploy`, `pods argocd`, or `pods -A`. A saved view name also works. `C-u :` loads the types of the cluster again. |
