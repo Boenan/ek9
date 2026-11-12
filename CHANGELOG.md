@@ -2,6 +2,14 @@
 
 <!-- cicada:insert -->
 
+## 0.2.0 (2026-11-12)
+
+### Features
+
+* rerender on data change (#7) ([d9919b6](https://github.com/Boenan/ek9/commit/d9919b6c71479c23f991395c93cbbc5aaf45ec93))
+
+[Compare with 0.1.2](https://github.com/Boenan/ek9/compare/0.1.2...0.2.0)
+
 ## 0.1.2 (2026-10-31)
 
 ### Bug Fixes
