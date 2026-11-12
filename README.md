@@ -51,6 +51,31 @@ Push `?` in a list to see all keys.
 | `x` | Decode a secret |
 | `Q` | Kill all ek9 buffers |
 
+## Logs
+
+Push `l` on a pod, a container, a deployment, a statefulset, a daemonset, or a job.
+For a workload, ek9 shows the logs of all pods that match its label selector.
+ek9 sorts the lines of all pods by their timestamps. New lines show after a short delay (option `ek9-logs-sort-delay`, 0.1 seconds).
+If there is more than one container, ek9 asks for a container.
+The choice `<all containers>` shows the logs of all containers.
+
+| Key | Action |
+|---|---|
+| `s` | Stop the stream, or start it again |
+| `g` | Remove the lines and start again |
+| `t` | Show or hide the timestamps |
+| `p` | Show or hide the pod names (workload logs only, off by default) |
+| `P` | Show the logs of the previous container instance |
+| `c` | Select another container |
+| `q` | Quit |
+
+Each pod name has its own color. The color comes from the pod name, so a pod keeps its color when you toggle `t` or `p`, or open the logs again.
+ek9 makes 50 colors that fit the background (option `ek9-logs-name-color-count`).
+The option `ek9-logs-name-colors` sets your own list of colors.
+`p` changes all lines immediately. The stream does not start again.
+With `<all containers>`, each line always starts with the container name in color.
+The option `ek9-logs-max-requests` sets the maximum number of streams (one for each container of each pod).
+
 ## All resource types
 
 `:` offers all types of the current context that you can list.

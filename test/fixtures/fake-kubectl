@@ -20,6 +20,8 @@
 # "logs" prints its arguments and two log lines, one with ANSI colors.
 # Each line starts with a timestamp, as with "--timestamps".  With
 # "--since-time", it prints line 2 again, its arguments, and line 3.
+# With "--prefix", each line starts with "[pod/POD/CONTAINER]", as
+# kubectl does, and the lines come from the pods web-1 and web-2.
 # "replace --dry-run=client" reads YAML from stdin and prints JSON with
 # its kind and name.  YAML with "---" gives a List, as kubectl does.
 # YAML with "last-applied-configuration" also gives the annotation,
@@ -167,6 +169,17 @@ case "$1" in
         ;;
     logs)
         case "$*" in
+            *--prefix*--since-time=*)
+                printf '[pod/web-1/app] 2026-10-30T05:00:01Z line 1\n'
+                printf '[pod/web-2/sidecar] 2026-10-30T05:00:02Z line 2\n'
+                printf '[pod/web-1/app] 2026-10-30T05:00:03Z line 3\n'
+                ;;
+            *--prefix*)
+                echo "[pod/web-1/app] 2026-10-30T05:00:00Z args: $*"
+                printf '[pod/web-1/app] 2026-10-30T05:00:01Z line 1\n'
+                printf '[pod/web-2/sidecar] 2026-10-30T05:00:02Z \033[31mline 2\n'
+                printf '[pod/web-1/app] 2026-10-30T05:00:02Z line 3\n'
+                ;;
             *--since-time=*)
                 # The same second again: kubectl gives line 2 again.
                 printf '2026-10-30T05:00:01.000000002Z line 2\n'

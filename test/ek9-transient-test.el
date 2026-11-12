@@ -64,7 +64,7 @@
 
 (ert-deftest ek9-transient-inapt-for-deployments ()
   (ek9-test--in-list-of 'deployments
-    (should (equal (ek9-test--inapt-keys) '("^" "l" "s" "x")))
+    (should (equal (ek9-test--inapt-keys) '("^" "s" "x")))
     (should (ek9-test--apt-p "RET"))))
 
 (ert-deftest ek9-transient-drill-down-buffer ()

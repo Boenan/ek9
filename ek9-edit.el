@@ -386,6 +386,9 @@ Ask the user first if the buffer has changes."
     (set-buffer-modified-p nil)
     (kill-buffer)))
 
+;; `define-minor-mode' defines the variable below, in the "Mode" section.
+(defvar ek9-edit-mode)
+
 (defun ek9-edit--query-kill ()
   "Return non-nil if ek9 can kill the edit buffer.
 If the buffer has changes that are not applied, ask the user."
