@@ -699,7 +699,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :aliases '("deploy" "dp")
   :drill-down #'ek9-resource-drill-deployment
   :row-face #'ek9-resource-replicas-face
-  :actions '(describe yaml edit delete scale restart port-forward events))
+  :actions '(describe yaml edit logs delete scale restart port-forward events))
 
 (ek9-define-resource replicasets
   :kind "replicasets"
@@ -715,7 +715,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :aliases '("sts")
   :drill-down #'ek9-resource-drill-owned
   :row-face #'ek9-resource-replicas-face
-  :actions '(describe yaml edit delete scale restart port-forward events))
+  :actions '(describe yaml edit logs delete scale restart port-forward events))
 
 (ek9-define-resource daemonsets
   :kind "daemonsets"
@@ -723,7 +723,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :aliases '("ds")
   :drill-down #'ek9-resource-drill-owned
   :row-face #'ek9-resource-daemonset-face
-  :actions '(describe yaml edit delete restart events))
+  :actions '(describe yaml edit logs delete restart events))
 
 (ek9-define-resource jobs
   :kind "jobs"
@@ -731,7 +731,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :aliases '("job")
   :drill-down #'ek9-resource-drill-owned
   :row-face #'ek9-resource-job-face
-  :actions '(describe yaml edit delete events))
+  :actions '(describe yaml edit logs delete events))
 
 (ek9-define-resource cronjobs
   :kind "cronjobs"

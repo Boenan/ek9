@@ -1,6 +1,7 @@
 [settings]
 release_branches = ["main"]
 default_scope = "ek9"
+release_pr_title = "chore(release): release {summary}"
 
 [forge]
 kind = "github"
