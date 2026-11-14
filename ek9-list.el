@@ -199,8 +199,8 @@ value to 0.")
 
 (defvar-local ek9-list--metrics nil
   "Hash table that maps an item ID to its metrics object, or nil.
-The value is nil until the first metrics arrive.  Then the buffer
-shows the metric columns, see `ek9-metrics-columns'.")
+The value is nil until the first metrics arrive.  Only a buffer in
+top mode reads the metrics, see `ek9-list-toggle-top'.")
 
 (defvar-local ek9-list--metrics-request nil
   "The `ek9-proxy' request that reads the metrics, or nil.")
@@ -299,50 +299,38 @@ The value is a string, the symbol `all', or nil."
   (or ek9-list--namespace-override (ek9-context-namespace)))
 
 (defun ek9-list--metrics-type ()
-  "Return the metrics type of the buffer, or nil if it has no metrics."
+  "Return the metrics type of the buffer, or nil if it has no top mode."
   (and ek9-metrics (ek9-resource-metrics ek9-list--resource)))
 
+(defun ek9-list--top-p ()
+  "Return non-nil if the buffer is in top mode now."
+  (and ek9-list--top (ek9-list--metrics-type)))
+
 (defun ek9-list--metric-columns ()
-  "Return the metric columns of the buffer, or nil.
-Return nil until the first metrics arrive."
-  (when (and (ek9-list--metrics-type) ek9-list--metrics)
-    (or ek9-list--metrics-columns
+  "Return the metric columns of the buffer, see `ek9-metrics-columns'.
+A cell is empty until the metrics of its row arrive."
+  (or ek9-list--metrics-columns
         (setq ek9-list--metrics-columns
               (ek9-metrics-columns
                (ek9-list--metrics-type)
                (lambda (item)
                  (and ek9-list--metrics
-                      (gethash (ek9-resource-item-id item) ek9-list--metrics))))))))
-
-(defun ek9-list--add-metric-columns (columns)
-  "Return COLUMNS with the metric columns of the buffer.
-Put the metric columns that are not wide before the AGE column, or
-at the end.  Put the wide metric columns at the end."
-  (if-let* ((metrics (ek9-list--metric-columns)))
-      (let* ((wide (seq-filter (lambda (column) (plist-get (nthcdr 3 column) :wide))
-                               metrics))
-             (normal (seq-difference metrics wide #'eq))
-             (age (seq-position columns "AGE"
-                                (lambda (column title) (equal (car column) title)))))
-        (append (if age
-                    (append (seq-take columns age) normal (seq-drop columns age))
-                  (append columns normal))
-                wide))
-    columns))
+                      (gethash (ek9-resource-item-id item) ek9-list--metrics)))))))
 
 (defun ek9-list--current-columns ()
   "Return the columns for this buffer.
 Remove the wide columns, unless the buffer shows them.  Add a
-NAMESPACE column when the buffer shows all namespaces.  Add the
-metric columns, see `ek9-list--add-metric-columns'.  In top mode,
-show only the NAME column and the metric columns."
+NAMESPACE column when the buffer shows all namespaces.  In top mode,
+show only the NAME column and all metric columns, see
+`ek9-list-toggle-top'."
   (let* ((base (or (ek9-resource-columns ek9-list--resource)
                    ek9-list--table-columns))
-         (all (ek9-list--add-metric-columns
-               (if (and ek9-list--top (ek9-list--metrics-type))
-                   (seq-filter (lambda (column) (equal (car column) "NAME"))
-                               base)
-                 base)))
+         (all (if (ek9-list--top-p)
+                  (append (seq-filter (lambda (column)
+                                        (equal (car column) "NAME"))
+                                      base)
+                          (ek9-list--metric-columns))
+                base))
          (columns (if ek9-list--wide
                       all
                     (seq-remove (lambda (column)
@@ -608,12 +596,7 @@ removes the mark and makes Emacs draw the window again."
       ;; sort for the table.
       (when-let* ((title (car tabulated-list-sort-key))
                   (columns)
-                  ((not (assoc title columns)))
-                  ;; The metric columns go away for a short time, for
-                  ;; example after a namespace change.  Keep their sort.
-                  ((not (and (ek9-list--metrics-type)
-                             (member title (ek9-metrics-titles
-                                            (ek9-list--metrics-type)))))))
+                  ((not (assoc title columns))))
         (setq tabulated-list-sort-key
               (when-let* ((sort (ek9-resource-sort ek9-list--resource))
                           ((assoc (car sort) columns)))
@@ -837,45 +820,38 @@ The extra arguments of a drill-down buffer become the query, see
 ;;;; Metrics
 
 (defun ek9-list--metrics-due-p ()
-  "Return non-nil if the buffer must read its metrics now."
-  (and (ek9-list--metrics-type)
+  "Return non-nil if the buffer must read its metrics now.
+Only a buffer in top mode reads the metrics."
+  (and (ek9-list--top-p)
        (not (ek9-list--paused-p))
        (not (ek9-proxy-live-p ek9-list--metrics-request))
        (or (null ek9-list--metrics-time)
            (>= (- (float-time) ek9-list--metrics-time) ek9-metrics-interval))))
 
 (defun ek9-list--receive-metrics (json)
-  "Show the metrics JSON in the buffer."
-  (setq ek9-list--metrics (ek9-metrics-index (ek9-list--metrics-type) json))
-  (ek9-list--render-soon))
-
-(defconst ek9-list--metrics-missing-delay 300
-  "Seconds to wait for the next read after the metrics API was missing.
-The command `ek9-list-refresh' reads the metrics at once.")
+  "Show the metrics JSON in the buffer, if it is in top mode."
+  (when (ek9-list--top-p)
+    (setq ek9-list--metrics (ek9-metrics-index (ek9-list--metrics-type) json))
+    (ek9-list--render-soon)))
 
 (defun ek9-list--metrics-error (code)
   "Continue after a failed read of the metrics, with the HTTP CODE.
 Do not show an error: many clusters have no metrics API.  After a
-404, remove the metric columns, set the top mode off, and wait
-`ek9-list--metrics-missing-delay' seconds more for the next read.
-After another error, keep the last metrics, for example while
-metrics-server starts again.
+404, set the top mode off.  After another error, keep the last
+metrics, for example while metrics-server starts again.
 
 The container list reads the metrics of one pod.  There, a 404 can
 also mean that the pod has no metrics at this time, for example
-after its start.  Thus the container list keeps the top mode and
-does not wait more."
+after its start.  Thus the container list keeps the top mode, and
+shows empty metric cells."
   (when (eql code 404)
-    (let ((pod (equal (ek9-list--metrics-type) "containers")))
-      (unless pod
-        (setq ek9-list--metrics-time
-              (+ (float-time) ek9-list--metrics-missing-delay)))
-      (when ek9-list--metrics
-        (setq ek9-list--metrics nil)
-        (ek9-list--render-soon))
-      (when (and ek9-list--top (not pod))
-        (ek9-list--set-top nil)
-        (message "ek9: Top mode off: the cluster has no metrics API")))))
+    (cond ((equal (ek9-list--metrics-type) "containers")
+           (when ek9-list--metrics
+             (setq ek9-list--metrics nil)
+             (ek9-list--render-soon)))
+          (ek9-list--top
+           (ek9-list--set-top nil)
+           (message "ek9: Top mode off: the cluster has no metrics API")))))
 
 (defun ek9-list--refresh-metrics ()
   "Read the metrics of the buffer, if `ek9-list--metrics-due-p'."
@@ -1447,23 +1423,35 @@ The option `ek9-list-wide' gives the value for new list buffers."
 
 (defun ek9-list--set-top (top)
   "Set the top mode of the buffer on if TOP is non-nil, and off if not.
-When the mode goes on, sort the rows by CPU, largest first.  When it
-goes off, use the sort from before the top mode again."
+When the mode goes on, sort the rows by CPU, largest first, and read
+the metrics.  When it goes off, use the sort from before the top mode
+again, and stop to read the metrics."
   (unless (eq (and top t) ek9-list--top)
+    (when ek9-list--metrics-request
+      (ek9-proxy-cancel ek9-list--metrics-request))
+    (setq ek9-list--metrics-request nil
+          ek9-list--metrics nil
+          ek9-list--metrics-time nil)
     (if top
         (setq ek9-list--top-saved-sort tabulated-list-sort-key
               tabulated-list-sort-key (cons "CPU" t))
       (setq tabulated-list-sort-key ek9-list--top-saved-sort
             ek9-list--top-saved-sort nil))
     (setq ek9-list--top (and top t))
-    (ek9-list--render)))
+    (ek9-list--render)
+    ;; Before the first rows arrive, the refresh reads the metrics.
+    (when ek9-list--loaded
+      (ek9-list--refresh-metrics))))
 
 (defun ek9-list-toggle-top ()
   "Set the top mode of this list buffer on or off.
 In top mode, the list shows only the name and the CPU and memory use
-of each row, as \"kubectl top\" does.  The rows with the largest CPU
-use come first.  The lists of pods, containers, and nodes have a top
-mode.  The cluster must have the metrics API, see `ek9-metrics'."
+of each row, as \"kubectl top\" does.  It also shows the use as a
+percentage of the requests and the limits (pods and containers), or of
+the allocatable resources (nodes).  The rows with the largest CPU use
+come first.  Only the top mode reads the metrics.  The lists of pods,
+containers, and nodes have a top mode.  The cluster must have the
+metrics API, see `ek9-metrics'."
   (interactive nil ek9-list-mode)
   (unless (ek9-list--metrics-type)
     (user-error "ek9: %s have no top mode"

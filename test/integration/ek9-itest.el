@@ -229,12 +229,10 @@ SKIP is a list of column titles that change with time.  If WIDE is
 non-nil, show the wide columns and compare with \"kubectl get -o
 wide\".  Else hide them and compare with \"kubectl get\".  Try again
 for 30 seconds, because values can change between the two calls.
-Return nil, or the differences of the last try.  The metric columns
-are not in \"kubectl get\", so turn them off.  The columns in
+Return nil, or the differences of the last try.  The columns in
 :omit-columns of the type are not in ek9, so remove them from the
 kubectl table."
-  (let* ((ek9-metrics nil)
-         (resource (ek9-resource-get name))
+  (let* ((resource (ek9-resource-get name))
          (namespaced (ek9-resource-namespaced resource))
          (buffer (ek9-itest--open name))
          differences)
@@ -328,12 +326,14 @@ BUFFER have a namespace."
   "Check that the list of NAME shows the same metrics as \"kubectl top\".
 TOP-ARGS are the arguments after \"top\".  TITLES is an alist of (TITLE
 . KUBECTL-TITLE).  SPEC is the drill-down plist of the list, or nil.
+Set the top mode on, because only the top mode shows the metrics.
 metrics-server changes the values every 15 seconds, so try again for
 30 seconds.  Return nil, or the differences of the last try."
   (let ((buffer (ek9-itest--open name spec))
         (namespaced (ek9-resource-namespaced (ek9-resource-get name)))
         differences)
     (with-current-buffer buffer
+      (ek9-list-toggle-top)
       (ek9-itest--wait-until (lambda () ek9-list--metrics)))
     (condition-case err
         (ek9-itest--wait-until
@@ -383,8 +383,9 @@ metrics-server changes the values every 15 seconds, so try again for
   (ek9-itest--with-cluster
     (let ((buffer (ek9-itest--open 'nodes)))
       (with-current-buffer buffer
-        (ek9-itest--wait-until (lambda () ek9-list--metrics))
+        (should-not (assoc "CPU" (append tabulated-list-format nil)))
         (ek9-list-toggle-top)
+        (ek9-itest--wait-until (lambda () ek9-list--metrics))
         (should (equal (mapcar #'car tabulated-list-format)
                        '("NAME" "CPU" "CPU/A" "MEM" "MEM/A")))
         (ek9-list-toggle-top)
