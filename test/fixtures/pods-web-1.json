@@ -10,6 +10,8 @@
     ],
     "containers": [
       { "name": "app", "image": "web:2",
+        "resources": { "requests": { "cpu": "100m", "memory": "64Mi" },
+                       "limits": { "memory": "128Mi" } },
         "ports": [ { "containerPort": 8080, "protocol": "TCP" },
                    { "containerPort": 8125, "protocol": "UDP" } ] },
       { "name": "worker", "image": "worker:2" }

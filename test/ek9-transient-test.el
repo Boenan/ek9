@@ -27,7 +27,7 @@
        ,@body)))
 
 (defconst ek9-test--menu-keys
-  '(":" "RET" "^" "n" "c" "v" "/" "o" "w" "g" "Q" "d" "y" "l" "x" "E" "F"
+  '(":" "RET" "^" "n" "c" "v" "/" "o" "w" "t" "g" "Q" "d" "y" "l" "x" "E" "F"
     "e" "s" "f" "S" "R" "D")
   "All keys of `ek9-dispatch'.")
 
@@ -64,7 +64,7 @@
 
 (ert-deftest ek9-transient-inapt-for-deployments ()
   (ek9-test--in-list-of 'deployments
-    (should (equal (ek9-test--inapt-keys) '("^" "s" "x")))
+    (should (equal (ek9-test--inapt-keys) '("^" "s" "t" "x")))
     (should (ek9-test--apt-p "RET"))))
 
 (ert-deftest ek9-transient-drill-down-buffer ()

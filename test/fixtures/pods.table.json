@@ -41,6 +41,18 @@
       "type": "string",
       "format": "",
       "priority": 1
+    },
+    {
+      "name": "Nominated Node",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    },
+    {
+      "name": "Readiness Gates",
+      "type": "string",
+      "format": "",
+      "priority": 1
     }
   ],
   "rows": [
@@ -51,6 +63,8 @@
         "Running",
         0,
         "22d",
+        "<none>",
+        "<none>",
         "<none>",
         "<none>"
       ]
@@ -63,6 +77,8 @@
         6,
         "22d",
         "<none>",
+        "<none>",
+        "<none>",
         "<none>"
       ]
     },
@@ -73,6 +89,8 @@
         "Pending",
         0,
         "22d",
+        "<none>",
+        "<none>",
         "<none>",
         "<none>"
       ]
@@ -85,6 +103,8 @@
         0,
         "22d",
         "<none>",
+        "<none>",
+        "<none>",
         "<none>"
       ]
     },
@@ -95,6 +115,8 @@
         "Init:1/2",
         0,
         "22d",
+        "<none>",
+        "<none>",
         "<none>",
         "<none>"
       ]
@@ -107,6 +129,8 @@
         3,
         "22d",
         "<none>",
+        "<none>",
+        "<none>",
         "<none>"
       ]
     },
@@ -118,6 +142,8 @@
         0,
         "22d",
         "<none>",
+        "<none>",
+        "<none>",
         "<none>"
       ]
     },
@@ -128,6 +154,8 @@
         "ExitCode:137",
         0,
         "22d",
+        "<none>",
+        "<none>",
         "<none>",
         "<none>"
       ]

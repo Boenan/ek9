@@ -1,0 +1,11 @@
+{
+  "kind": "PodMetrics",
+  "apiVersion": "metrics.k8s.io/v1beta1",
+  "metadata": { "name": "web-1", "namespace": "team-a" },
+  "timestamp": "2026-10-23T19:22:08Z",
+  "window": "10.18s",
+  "containers": [
+    { "name": "app", "usage": { "cpu": "50m", "memory": "32Mi" } },
+    { "name": "proxy", "usage": { "cpu": "1500u", "memory": "10Mi" } }
+  ]
+}

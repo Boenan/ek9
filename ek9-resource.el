@@ -94,9 +94,14 @@ Kubernetes object that actions such as describe use.  CONTAINER is a
 container name, or nil.  If nil, actions use the item itself.")
   (hidden nil :documentation "Non-nil to not offer this type in \":\".
 Use it for a type that only a drill-down can show.")
+  (omit-columns nil :documentation "Titles of server table columns to not show.
+For example, (\"NOMINATED NODE\") removes that column of the pods
+table.  The titles are in upper case.")
   (metrics nil :documentation "The type in the metrics API, or nil.
-The value is \"pods\" or \"nodes\".  The list then has CPU and memory
-columns from the metrics API, see `ek9-metrics-columns'.  These are
+The value is \"pods\", \"containers\", or \"nodes\".  The list then
+has CPU and memory columns from the metrics API, see
+`ek9-metrics-columns'.  It also has a top mode, see
+`ek9-list-toggle-top'.  These are
 the only columns of an API type that do not come from the server
 table."))
 
@@ -120,8 +125,9 @@ If a resource type with the same name exists, replace it."
 (defmacro ek9-define-resource (name &rest properties)
   "Define the resource type NAME with PROPERTIES.
 PROPERTIES is a plist with the keys :kind, :api, :namespaced,
-:columns, :actions, :aliases, :sort, :drill-down, :row-face, :items, :target,
-:hidden, and :metrics.  See `ek9-resource' for the meaning of each key."
+:columns, :actions, :aliases, :sort, :drill-down, :row-face, :items,
+:target, :hidden, :omit-columns, and :metrics.  See `ek9-resource'
+for the meaning of each key."
   (declare (indent 1))
   `(ek9-resource-register (ek9-resource-create :name ',name ,@properties)))
 
@@ -671,6 +677,8 @@ The plist makes ITEM the current namespace and shows its pods."
   :drill-down #'ek9-resource-drill-pod
   :row-face #'ek9-resource-pod-face
   :metrics "pods"
+  ;; These wide columns are almost always "<none>".
+  :omit-columns '("NOMINATED NODE" "READINESS GATES")
   :actions '(describe yaml edit logs shell delete port-forward events)
   :aliases '("po"))
 
@@ -691,6 +699,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :items #'ek9-resource-container-items
   :target #'ek9-resource-container-target
   :row-face #'ek9-resource-container-face
+  :metrics "containers"
   :actions '(describe yaml logs shell port-forward events))
 
 (ek9-define-resource deployments
@@ -776,6 +785,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :drill-down #'ek9-resource-drill-node
   :row-face #'ek9-resource-node-face
   :metrics "nodes"
+  :omit-columns '("KERNEL-VERSION" "CONTAINER-RUNTIME")
   :actions '(describe yaml edit delete events))
 
 (ek9-define-resource namespaces

@@ -44,6 +44,7 @@ A list updates itself in the background. It draws the rows again only when the t
 | `v` | Open a saved view |
 | `/` | Filter the rows. `-l REGEXP` filters by labels, `-a REGEXP` by annotations (see below). |
 | `w` | Show or hide the wide columns of `kubectl get -o wide`. They show by default (option `ek9-list-wide`). |
+| `t` | Set the top mode on or off, as `kubectl top` (see below) |
 | `d` / `y` | Describe / show the YAML |
 | `E` | Show the events of the item |
 | `l` / `s` | Show the logs / open a shell |
@@ -122,23 +123,36 @@ If the watch fails three times, the list reads the full list every 3 seconds (op
 Push `g` to try the watch again.
 Set `ek9-watch` to nil to always read the full list every 3 seconds.
 
-## CPU and memory
+## Top mode
 
-The pod and node lists show the CPU and memory use, as `kubectl top` does.
+Push `t` in the pod, container, or node list to set the top mode on.
+The top mode shows the CPU and memory use, as `kubectl top` does.
+The other lists have no top mode.
 The cluster must have the metrics API, for example from metrics-server.
-Without it, the lists show no CPU and memory columns.
-ek9 reads the metrics every 15 seconds (option `ek9-metrics-interval`).
-Set `ek9-metrics` to nil to remove the columns.
+If the cluster has no metrics API, ek9 sets the top mode off.
+
+In top mode, the list shows only the name and the CPU and memory columns.
+The `w` key does not hide these columns.
+The rows with the largest CPU use come first.
+Push `t` again to show all columns and the sort from before.
+`RET` on a pod in top mode opens its containers in top mode.
+A saved view does not keep the top mode.
+
+Only a list in top mode reads the metrics.
+It reads them every 15 seconds (option `ek9-metrics-interval`).
+Set `ek9-metrics` to nil to remove the top mode.
 
 | Column | Value |
 |---|---|
 | `CPU` | CPU use in millicores, for example `250m` |
+| `CPU/R` | Pods and containers: the CPU use as a percentage of the CPU request |
+| `CPU/L` | Pods and containers: the CPU use as a percentage of the CPU limit |
 | `MEM` | Memory use in MiB, for example `64Mi` |
-| `CPU/R`, `MEM/R` | Pods: the use as a percentage of the requests. A wide column. |
-| `CPU/L`, `MEM/L` | Pods: the use as a percentage of the limits. A wide column. |
+| `MEM/R` | Pods and containers: the memory use as a percentage of the memory request |
+| `MEM/L` | Pods and containers: the memory use as a percentage of the memory limit |
 | `CPU/A`, `MEM/A` | Nodes: the use as a percentage of the allocatable resources |
 
-A pod without requests or limits shows `n/a` in these columns.
+A pod or a container without requests or limits shows `n/a` in these columns.
 
 ## Saved views
 
