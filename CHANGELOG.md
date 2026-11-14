@@ -2,6 +2,14 @@
 
 <!-- cicada:insert -->
 
+## 0.3.0 (2026-11-14)
+
+### Features
+
+* add top mode (#9) ([7a97ee5](https://github.com/Boenan/ek9/commit/7a97ee5bb25f9ccec782f1a22cf94a079068908d))
+
+[Compare with 0.2.0](https://github.com/Boenan/ek9/compare/0.2.0...0.3.0)
+
 ## 0.2.0 (2026-11-12)
 
 ### Features
