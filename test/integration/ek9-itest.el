@@ -230,7 +230,9 @@ non-nil, show the wide columns and compare with \"kubectl get -o
 wide\".  Else hide them and compare with \"kubectl get\".  Try again
 for 30 seconds, because values can change between the two calls.
 Return nil, or the differences of the last try.  The metric columns
-are not in \"kubectl get\", so turn them off."
+are not in \"kubectl get\", so turn them off.  The columns in
+:omit-columns of the type are not in ek9, so remove them from the
+kubectl table."
   (let* ((ek9-metrics nil)
          (resource (ek9-resource-get name))
          (namespaced (ek9-resource-namespaced resource))
@@ -247,9 +249,16 @@ are not in \"kubectl get\", so turn them off."
            (setq differences
                  (ek9-itest--differences
                   buffer
-                  (apply #'ek9-itest--table (ek9-resource-kind resource)
-                         (append (when namespaced (list "-n" ek9-itest--namespace))
-                                 (when wide (list "-o" "wide"))))
+                  ;; ek9 does not show the columns in :omit-columns.
+                  (mapcar (lambda (row)
+                            (seq-remove (lambda (cell)
+                                          (member (car cell)
+                                                  (ek9-resource-omit-columns resource)))
+                                        row))
+                          (apply #'ek9-itest--table (ek9-resource-kind resource)
+                                 (append (when namespaced
+                                           (list "-n" ek9-itest--namespace))
+                                         (when wide (list "-o" "wide")))))
                   skip namespaced))
            (or (null differences) (progn (sleep-for 1) nil)))
          30)

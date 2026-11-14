@@ -248,6 +248,15 @@ METRICS is the metrics object of ITEM."
           (cancel-timer ek9-list--timer)
           (setq ek9-list--timer nil))))))
 
+(ert-deftest ek9-pods-omit-columns ()
+  ;; The server table has the wide columns NOMINATED NODE and
+  ;; READINESS GATES.  The pod list does not show them.
+  (ek9-test--with-metrics-list 'pods
+    (let ((titles (mapcar #'car tabulated-list-format)))
+      (should (member "NODE" titles))
+      (should-not (member "NOMINATED NODE" titles))
+      (should-not (member "READINESS GATES" titles)))))
+
 ;;;; Containers
 
 (defmacro ek9-test--with-container-metrics (&rest body)

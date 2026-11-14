@@ -720,12 +720,16 @@ A type with an :items function reads the JSON object instead."
 
 (defun ek9-list--set-table (table)
   "Use the columns of the server TABLE in this buffer.
-Keep the old column objects if the definitions did not change, so
+Do not use the columns in :omit-columns of the resource type.  Keep
+the old column objects if the definitions did not change, so
 that the header does not change."
   (let ((definitions (alist-get 'columnDefinitions table)))
     (unless (equal definitions ek9-list--table-definitions)
       (setq ek9-list--table-definitions definitions
-            ek9-list--table-columns (ek9-proxy-table-columns table)))))
+            ek9-list--table-columns
+            (let ((omit (ek9-resource-omit-columns ek9-list--resource)))
+              (seq-remove (lambda (column) (member (car column) omit))
+                          (ek9-proxy-table-columns table)))))))
 
 (defun ek9-list--receive (json)
   "Show the reply JSON of a refresh.
