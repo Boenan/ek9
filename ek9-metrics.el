@@ -176,9 +176,17 @@ KEY is `cpu' or `memory'.  CPU is in millicores, memory in bytes."
 
 ;;;; Columns
 
+;; The values are short, for example "250m" or "16%".  The columns are
+;; wider than the values, so that the right-aligned columns do not touch.
+(defconst ek9-metrics--usage-width 8
+  "Default width of the CPU and MEM columns.")
+
+(defconst ek9-metrics--percent-width 7
+  "Default width of the columns with a percentage.")
+
 (defun ek9-metrics--usage-column (title key)
   "Return the column TITLE for the use of KEY, see `ek9-metrics-columns'."
-  (list title 6
+  (list title ek9-metrics--usage-width
         (lambda (metrics _item) (ek9-metrics--text key (ek9-metrics--usage metrics key)))
         (lambda (metrics _item) (ek9-metrics--usage metrics key))))
 
@@ -191,7 +199,7 @@ example `ek9-metrics--pod-resource'."
                    (ek9-metrics--percent
                     (ek9-metrics--amount key (ek9-metrics--usage metrics key))
                     (ek9-metrics--amount key (funcall resource item kind key))))))
-    (list title 5
+    (list title ek9-metrics--percent-width
           (lambda (metrics item)
             (ek9-metrics--percent-text (funcall percent metrics item)))
           percent)))
@@ -202,7 +210,7 @@ example `ek9-metrics--pod-resource'."
                    (ek9-metrics--percent
                     (ek9-metrics--amount key (ek9-metrics--usage metrics key))
                     (ek9-metrics--amount key (ek9-metrics--node-resource item key))))))
-    (list title 5
+    (list title ek9-metrics--percent-width
           (lambda (metrics item)
             (ek9-metrics--percent-text (funcall percent metrics item)))
           percent)))
