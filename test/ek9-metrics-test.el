@@ -3,8 +3,9 @@
 ;;; Commentary:
 
 ;; Unit tests for the CPU and memory columns.  The fake proxy serves
-;; the metrics fixtures pods.v1beta1.metrics.k8s.io.json and
-;; nodes.v1beta1.metrics.k8s.io.json.
+;; the metrics fixtures pods.v1beta1.metrics.k8s.io.json,
+;; nodes.v1beta1.metrics.k8s.io.json, and
+;; pods-web-1.v1beta1.metrics.k8s.io.json.
 
 ;;; Code:
 
@@ -246,6 +247,155 @@ METRICS is the metrics object of ITEM."
         (when (timerp ek9-list--timer)
           (cancel-timer ek9-list--timer)
           (setq ek9-list--timer nil))))))
+
+;;;; Containers
+
+(defmacro ek9-test--with-container-metrics (&rest body)
+  "Open the container list of the pod web-1, and run BODY in it.
+BODY starts after the rows and the metrics arrived."
+  (declare (indent 0))
+  `(ek9-test--with-clean-context
+     (ek9-test--load-contexts)
+     (let ((ek9-refresh-interval 3600)
+           (ek9-list-wide t))
+       (unwind-protect
+           (with-current-buffer
+               (ek9-list-open 'containers
+                              (ek9-resource-drill-pod
+                               (ek9-test--read-fixture "pods-web-1.json")))
+             (ek9-test--wait-until (lambda () ek9-list--loaded) 10)
+             (ek9-test--wait-until (lambda () ek9-list--metrics) 10)
+             ,@body)
+         (mapc #'kill-buffer (ek9-list--buffers))
+         (when (timerp ek9-list--timer)
+           (cancel-timer ek9-list--timer)
+           (setq ek9-list--timer nil))))))
+
+(ert-deftest ek9-metrics-path-of-containers ()
+  (should (equal (ek9-metrics-path "containers" "team-a" nil "web-1")
+                 "/apis/metrics.k8s.io/v1beta1/namespaces/team-a/pods/web-1")))
+
+(ert-deftest ek9-metrics-container-columns ()
+  (ek9-test--with-container-metrics
+    (should (equal (mapcar #'car tabulated-list-format)
+                   '("NAME" "TYPE" "IMAGE" "READY" "STATE" "RESTARTS" "PORTS"
+                     "CPU" "MEM" "AGE" "CPU/R" "MEM/R" "CPU/L" "MEM/L")))
+    (let ((app (ek9-test--cells "team-a/app"))
+          (proxy (ek9-test--cells "team-a/proxy"))
+          (worker (ek9-test--cells "team-a/worker")))
+      ;; The requests are 100m and 64Mi.  Only memory has a limit.
+      (should (equal (mapcar (lambda (title) (cdr (assoc title app)))
+                             '("CPU" "MEM" "CPU/R" "MEM/R" "CPU/L" "MEM/L"))
+                     '("50m" "32Mi" "50%" "50%" "n/a" "25%")))
+      (should (equal (mapcar (lambda (title) (cdr (assoc title proxy)))
+                             '("CPU" "MEM" "CPU/R"))
+                     '("2m" "10Mi" "n/a")))
+      ;; A container that does not run has no metrics.
+      (should (equal (cdr (assoc "CPU" worker)) "")))))
+
+(ert-deftest ek9-metrics-container-404-keeps-interval ()
+  (ek9-test--with-container-metrics
+    (ek9-list-toggle-top)
+    (ek9-list--metrics-error 404)
+    ;; The pod can have metrics at the next read.
+    (should-not ek9-list--metrics)
+    (should (<= ek9-list--metrics-time (float-time)))
+    (should ek9-list--top)))
+
+;;;; Top mode
+
+(ert-deftest ek9-metrics-top-pods ()
+  (ek9-test--with-metrics-list 'pods
+    (let ((columns (mapcar #'car tabulated-list-format))
+          (sort tabulated-list-sort-key))
+      (ek9-list-toggle-top)
+      (should (equal (mapcar #'car tabulated-list-format)
+                     '("NAME" "CPU" "MEM" "CPU/R" "MEM/R" "CPU/L" "MEM/L")))
+      ;; The largest CPU use is first.
+      (should (equal tabulated-list-sort-key '("CPU" . t)))
+      (should (equal (seq-take (mapcar #'car tabulated-list-entries) 2)
+                     '("default/nginx-7c5b8d65b8-abcde" "default/api-5f9c-xyz")))
+      (should (string-match-p "View: pods \\[[0-9]+\\]  Top"
+                              (substring-no-properties (ek9-list--tab-line))))
+      (ek9-list-toggle-wide)
+      (should (equal (mapcar #'car tabulated-list-format) '("NAME" "CPU" "MEM")))
+      (ek9-list-toggle-wide)
+      ;; The columns and the sort come back.
+      (ek9-list-toggle-top)
+      (should (equal (mapcar #'car tabulated-list-format) columns))
+      (should (equal tabulated-list-sort-key sort))
+      (should-not (string-match-p "Top" (substring-no-properties
+                                         (ek9-list--tab-line)))))))
+
+(ert-deftest ek9-metrics-top-all-namespaces ()
+  (ek9-test--with-metrics-list 'pods
+    (setq ek9-context--namespace 'all)
+    (ek9-list-toggle-top)
+    (should (equal (seq-take (mapcar #'car tabulated-list-format) 3)
+                   '("NAMESPACE" "NAME" "CPU")))))
+
+(ert-deftest ek9-metrics-top-nodes ()
+  (ek9-test--with-metrics-list 'nodes
+    (ek9-list-toggle-top)
+    (should (equal (mapcar #'car tabulated-list-format)
+                   '("NAME" "CPU" "CPU/A" "MEM" "MEM/A")))))
+
+(ert-deftest ek9-metrics-top-stays-after-reset ()
+  (ek9-test--with-metrics-list 'pods
+    (ek9-list-toggle-top)
+    (ek9-list--reset)
+    (should (equal (mapcar #'car tabulated-list-format) '("NAME")))
+    (ek9-list-refresh)
+    (ek9-test--wait-until (lambda () ek9-list--metrics) 10)
+    (should (equal (seq-take (mapcar #'car tabulated-list-format) 2)
+                   '("NAME" "CPU")))
+    (should (equal (car (mapcar #'car tabulated-list-entries))
+                   "default/nginx-7c5b8d65b8-abcde"))))
+
+(ert-deftest ek9-metrics-top-needs-metrics-type ()
+  (ek9-test--with-metrics-list 'pods
+    (let ((ek9-metrics nil))
+      (should-error (ek9-list-toggle-top) :type 'user-error)))
+  (with-temp-buffer
+    (ek9-list-mode)
+    (setq ek9-list--resource (ek9-resource-get 'deployments))
+    (should-error (ek9-list-toggle-top) :type 'user-error)
+    (should-not ek9-list--top)))
+
+(ert-deftest ek9-metrics-top-off-without-metrics-api ()
+  (ek9-test--with-metrics-list 'pods
+    (let ((sort tabulated-list-sort-key))
+      (ek9-list-toggle-top)
+      (ek9-list--metrics-error 503)
+      (should ek9-list--top)
+      (ek9-list--metrics-error 404)
+      (should-not ek9-list--top)
+      (should (equal tabulated-list-sort-key sort))
+      (should (member "STATUS" (mapcar #'car tabulated-list-format))))))
+
+(ert-deftest ek9-metrics-top-goes-to-containers ()
+  (ek9-test--with-clean-context
+    (ek9-test--load-contexts)
+    (unwind-protect
+        (let ((parent (generate-new-buffer " *ek9 test parent*"))
+              (spec (ek9-resource-drill-pod
+                     (ek9-test--read-fixture "pods-web-1.json"))))
+          (with-current-buffer parent
+            (ek9-list-mode)
+            (setq ek9-list--resource (ek9-resource-get 'pods)
+                  ek9-list--top t))
+          (with-current-buffer (ek9-list-open 'containers spec parent)
+            (should ek9-list--top)
+            (should (equal tabulated-list-sort-key '("CPU" . t)))
+            (ek9-test--wait-until (lambda () ek9-list--metrics) 10)
+            (should (equal (seq-take (mapcar #'car tabulated-list-format) 3)
+                           '("NAME" "CPU" "MEM")))
+            (should (equal (car (mapcar #'car tabulated-list-entries))
+                           "team-a/app"))))
+      (mapc #'kill-buffer (ek9-list--buffers))
+      (when (timerp ek9-list--timer)
+        (cancel-timer ek9-list--timer)
+        (setq ek9-list--timer nil)))))
 
 (provide 'ek9-metrics-test)
 

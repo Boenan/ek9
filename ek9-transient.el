@@ -99,6 +99,9 @@ the context must not be read-only.  These are the same rules as in
     ("/" "Filter" ek9-list-filter)
     ("o" "Sort by column" tabulated-list-sort)
     ("w" "Wide columns" ek9-list-toggle-wide)
+    ("t" "Top mode" ek9-list-toggle-top
+     :inapt-if-not (lambda () (and ek9-list--resource
+                                   (ek9-list--metrics-type))))
     ("g" "Refresh" ek9-list-refresh)
     ("Q" "Kill all ek9 buffers" ek9-kill-all-buffers)]
    ["View"

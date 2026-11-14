@@ -213,6 +213,13 @@ shows the metric columns, see `ek9-metrics-columns'.")
 ek9 makes them one time, so that the columns stay `equal' between
 renders.")
 
+(defvar-local ek9-list--top nil
+  "Non-nil if the buffer is in top mode, see `ek9-list-toggle-top'.")
+
+(defvar-local ek9-list--top-saved-sort nil
+  "The sort of the buffer from before the top mode, or nil.
+The value has the form of `tabulated-list-sort-key'.")
+
 (defvar-local ek9-list--render-timer nil
   "Timer that shows the changes of watch events, or nil.")
 
@@ -327,10 +334,15 @@ at the end.  Put the wide metric columns at the end."
   "Return the columns for this buffer.
 Remove the wide columns, unless the buffer shows them.  Add a
 NAMESPACE column when the buffer shows all namespaces.  Add the
-metric columns, see `ek9-list--add-metric-columns'."
-  (let* ((all (ek9-list--add-metric-columns
-               (or (ek9-resource-columns ek9-list--resource)
-                   ek9-list--table-columns)))
+metric columns, see `ek9-list--add-metric-columns'.  In top mode,
+show only the NAME column and the metric columns."
+  (let* ((base (or (ek9-resource-columns ek9-list--resource)
+                   ek9-list--table-columns))
+         (all (ek9-list--add-metric-columns
+               (if (and ek9-list--top (ek9-list--metrics-type))
+                   (seq-filter (lambda (column) (equal (car column) "NAME"))
+                               base)
+                 base)))
          (columns (if ek9-list--wide
                       all
                     (seq-remove (lambda (column)
@@ -671,6 +683,8 @@ removes the mark and makes Emacs draw the window again."
            (format "%s [%d]"
                    (ek9-resource-name ek9-list--resource)
                    (length tabulated-list-entries))
+           (when ek9-list--top
+             (concat "  " (propertize "Top" 'face 'bold)))
            (when ek9-list--view
              (concat "  " (propertize "Saved view: " 'face 'bold) ek9-list--view))
            (when ek9-list--label
@@ -718,7 +732,9 @@ that the header does not change."
 JSON is a server table, or the JSON object for a type with :items.
 After a server table, start a watch from its resourceVersion."
   (if-let* ((function (ek9-resource-items ek9-list--resource)))
-      (ek9-list--update (funcall function json))
+      (progn
+        (ek9-list--update (funcall function json))
+        (ek9-list--refresh-metrics))
     (ek9-list--set-table json)
     (setq ek9-list--resource-version (ek9-list--table-version json)
           ek9-list--loaded-time (float-time))
@@ -826,7 +842,7 @@ The extra arguments of a drill-down buffer become the query, see
 
 (defun ek9-list--receive-metrics (json)
   "Show the metrics JSON in the buffer."
-  (setq ek9-list--metrics (ek9-metrics-index json))
+  (setq ek9-list--metrics (ek9-metrics-index (ek9-list--metrics-type) json))
   (ek9-list--render-soon))
 
 (defconst ek9-list--metrics-missing-delay 300
@@ -836,28 +852,39 @@ The command `ek9-list-refresh' reads the metrics at once.")
 (defun ek9-list--metrics-error (code)
   "Continue after a failed read of the metrics, with the HTTP CODE.
 Do not show an error: many clusters have no metrics API.  After a
-404, remove the metric columns, and wait
+404, remove the metric columns, set the top mode off, and wait
 `ek9-list--metrics-missing-delay' seconds more for the next read.
 After another error, keep the last metrics, for example while
-metrics-server starts again."
+metrics-server starts again.
+
+The container list reads the metrics of one pod.  There, a 404 can
+also mean that the pod has no metrics at this time, for example
+after its start.  Thus the container list keeps the top mode and
+does not wait more."
   (when (eql code 404)
-    (setq ek9-list--metrics-time (+ (float-time) ek9-list--metrics-missing-delay))
-    (when ek9-list--metrics
-      (setq ek9-list--metrics nil)
-      (ek9-list--render-soon))))
+    (let ((pod (equal (ek9-list--metrics-type) "containers")))
+      (unless pod
+        (setq ek9-list--metrics-time
+              (+ (float-time) ek9-list--metrics-missing-delay)))
+      (when ek9-list--metrics
+        (setq ek9-list--metrics nil)
+        (ek9-list--render-soon))
+      (when (and ek9-list--top (not pod))
+        (ek9-list--set-top nil)
+        (message "ek9: Top mode off: the cluster has no metrics API")))))
 
 (defun ek9-list--refresh-metrics ()
   "Read the metrics of the buffer, if `ek9-list--metrics-due-p'."
   (when (ek9-list--metrics-due-p)
     (pcase-let ((buffer (current-buffer))
                 (generation ek9-list--generation)
-                (`(,_ . ,query) (ek9-list--parse-args)))
+                (`(,name . ,query) (ek9-list--parse-args)))
       (setq ek9-list--metrics-time (float-time)
             ek9-list--metrics-request
             (ek9-proxy-get (ek9-context-current)
                            (ek9-metrics-path (ek9-list--metrics-type)
                                              (ek9-list--api-namespace)
-                                             query)
+                                             query name)
                            (lambda (json)
                              (ek9-list--handle buffer generation
                                                #'ek9-list--receive-metrics json))
@@ -1414,6 +1441,32 @@ The option `ek9-list-wide' gives the value for new list buffers."
   (ek9-list--render)
   (message "ek9: Wide columns %s" (if ek9-list--wide "on" "off")))
 
+(defun ek9-list--set-top (top)
+  "Set the top mode of the buffer on if TOP is non-nil, and off if not.
+When the mode goes on, sort the rows by CPU, largest first.  When it
+goes off, use the sort from before the top mode again."
+  (unless (eq (and top t) ek9-list--top)
+    (if top
+        (setq ek9-list--top-saved-sort tabulated-list-sort-key
+              tabulated-list-sort-key (cons "CPU" t))
+      (setq tabulated-list-sort-key ek9-list--top-saved-sort
+            ek9-list--top-saved-sort nil))
+    (setq ek9-list--top (and top t))
+    (ek9-list--render)))
+
+(defun ek9-list-toggle-top ()
+  "Set the top mode of this list buffer on or off.
+In top mode, the list shows only the name and the CPU and memory use
+of each row, as \"kubectl top\" does.  The rows with the largest CPU
+use come first.  The lists of pods, containers, and nodes have a top
+mode.  The cluster must have the metrics API, see `ek9-metrics'."
+  (interactive nil ek9-list-mode)
+  (unless (ek9-list--metrics-type)
+    (user-error "ek9: %s have no top mode"
+                (ek9-resource-name ek9-list--resource)))
+  (ek9-list--set-top (not ek9-list--top))
+  (message "ek9: Top mode %s" (if ek9-list--top "on" "off")))
+
 (defun ek9-list-switch-namespace (&optional refresh)
   "Select the namespace for ek9 in the current context.
 A drill-down buffer always shows its own namespace, so this command
@@ -1463,6 +1516,7 @@ argument REFRESH, load the contexts from kubeconfig again."
   "S" #'ek9-scale
   "o" #'tabulated-list-sort
   "w" #'ek9-list-toggle-wide
+  "t" #'ek9-list-toggle-top
   "R" #'ek9-restart
   "?" #'ek9-dispatch
   "RET" #'ek9-list-drill-down
@@ -1509,7 +1563,8 @@ SPEC is a drill-down plist with the keys :args, :label, :namespace,
 saved view, SPEC has the keys :view (the name), :namespace, :filter,
 :context, and :wide.  If :wide is missing, use `ek9-list-wide'.  If
 SPEC is nil, show the top level.  PARENT is the list buffer of the
-level above, or nil."
+level above, or nil.  A new buffer takes the wide columns setting
+and the top mode from PARENT."
   (let ((resource (ek9-resource-get name))
         (buffer (get-buffer-create (ek9-list--buffer-name name spec))))
     (with-current-buffer buffer
@@ -1521,7 +1576,12 @@ level above, or nil."
                                      (buffer-local-value 'ek9-list--wide parent)
                                    ek9-list-wide)
                   tabulated-list-sort-key (ek9-resource-sort resource))
-            (ek9-list--render))
+            ;; A level below a list in top mode starts in top mode.
+            (if (and (buffer-live-p parent)
+                     (buffer-local-value 'ek9-list--top parent)
+                     (ek9-list--metrics-type))
+                (ek9-list--set-top t)
+              (ek9-list--render)))
         ;; A buffer for the same view or drill-down can exist with an
         ;; old definition, for example after a save of a view with the
         ;; same name.  Then remove its rows, and ignore a refresh that
@@ -1533,8 +1593,11 @@ level above, or nil."
                      (equal (plist-get spec :context) ek9-list--view-context))
           (setq ek9-list--resource resource
                 ek9-list--namespace-override (plist-get spec :namespace)
-                ek9-list--args (plist-get spec :args)
-                tabulated-list-sort-key (ek9-resource-sort resource))
+                ek9-list--args (plist-get spec :args))
+          ;; In top mode, keep the sort of the top mode.
+          (if ek9-list--top
+              (setq ek9-list--top-saved-sort (ek9-resource-sort resource))
+            (setq tabulated-list-sort-key (ek9-resource-sort resource)))
           (ek9-list--reset)))
       (setq ek9-list--args (plist-get spec :args)
             ek9-list--label (plist-get spec :label)

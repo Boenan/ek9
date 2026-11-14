@@ -315,13 +315,13 @@ BUFFER have a namespace."
                 (push (list id title ours theirs) differences)))))))
     differences))
 
-(defun ek9-itest--check-metrics (name top-args titles)
+(defun ek9-itest--check-metrics (name top-args titles &optional spec)
   "Check that the list of NAME shows the same metrics as \"kubectl top\".
 TOP-ARGS are the arguments after \"top\".  TITLES is an alist of (TITLE
-. KUBECTL-TITLE).  metrics-server changes the values every 15
-seconds, so try again for 30 seconds.  Return nil, or the differences
-of the last try."
-  (let ((buffer (ek9-itest--open name))
+. KUBECTL-TITLE).  SPEC is the drill-down plist of the list, or nil.
+metrics-server changes the values every 15 seconds, so try again for
+30 seconds.  Return nil, or the differences of the last try."
+  (let ((buffer (ek9-itest--open name spec))
         (namespaced (ek9-resource-namespaced (ek9-resource-get name)))
         differences)
     (with-current-buffer buffer
@@ -359,6 +359,27 @@ of the last try."
     (should-not (ek9-itest--check-metrics
                  'pods (list "pods" "-n" ek9-itest--namespace)
                  '(("CPU" . "CPU(cores)") ("MEM" . "MEMORY(bytes)"))))))
+
+(ert-deftest ek9-itest-metrics-containers ()
+  (ek9-itest--with-cluster
+    (let ((pod (ek9-itest--running-web-pod)))
+      (should-not (ek9-itest--check-metrics
+                   'containers
+                   (list "pod" (ek9-resource-item-name pod)
+                         "-n" ek9-itest--namespace "--containers")
+                   '(("CPU" . "CPU(cores)") ("MEM" . "MEMORY(bytes)"))
+                   (ek9-resource-drill-pod pod))))))
+
+(ert-deftest ek9-itest-top-mode ()
+  (ek9-itest--with-cluster
+    (let ((buffer (ek9-itest--open 'nodes)))
+      (with-current-buffer buffer
+        (ek9-itest--wait-until (lambda () ek9-list--metrics))
+        (ek9-list-toggle-top)
+        (should (equal (mapcar #'car tabulated-list-format)
+                       '("NAME" "CPU" "CPU/A" "MEM" "MEM/A")))
+        (ek9-list-toggle-top)
+        (should (member "STATUS" (mapcar #'car tabulated-list-format)))))))
 
 ;;;; Columns
 

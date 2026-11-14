@@ -21,8 +21,8 @@
 
 ;;; Commentary:
 
-;; The lists of pods and nodes show the CPU and memory use, as
-;; "kubectl top" does.  The server table does not have these values.
+;; The lists of pods, containers, and nodes show the CPU and memory
+;; use, as "kubectl top" does.  The server table does not have these values.
 ;; ek9 reads them from the metrics API (metrics.k8s.io) through the
 ;; proxy, and adds columns to the list.  A resource type declares the
 ;; metrics type with :metrics in `ek9-define-resource'.
@@ -140,6 +140,13 @@ container has no limit: then the pod has no limit."
                 (and (eq kind 'limits) (memq nil values)))
       (apply #'+ (delq nil values)))))
 
+(defun ek9-metrics--container-resource (container kind key)
+  "Return the resource KEY of KIND of the item CONTAINER, or nil.
+CONTAINER is an item of `ek9-resource-container-items'.  KIND and KEY
+are as in `ek9-metrics--pod-resource'."
+  (ek9-metrics-parse-quantity
+   (alist-get key (ek9-resource-path container (list 'spec 'resources kind)))))
+
 (defun ek9-metrics--node-resource (node key)
   "Return the allocatable resource KEY of NODE, or nil."
   (ek9-metrics-parse-quantity
@@ -175,13 +182,15 @@ KEY is `cpu' or `memory'.  CPU is in millicores, memory in bytes."
         (lambda (metrics _item) (ek9-metrics--usage metrics key))
         nil))
 
-(defun ek9-metrics--pod-column (title key kind)
+(defun ek9-metrics--resource-column (title key kind resource)
   "Return the column TITLE for the use of KEY as a percentage of KIND.
-KIND is `requests' or `limits'.  The column is a wide column."
+KIND is `requests' or `limits'.  RESOURCE is a function that takes
+the item, KIND, and KEY, and returns the request or the limit, for
+example `ek9-metrics--pod-resource'.  The column is a wide column."
   (let ((percent (lambda (metrics item)
                    (ek9-metrics--percent
                     (ek9-metrics--amount key (ek9-metrics--usage metrics key))
-                    (ek9-metrics--amount key (ek9-metrics--pod-resource item kind key))))))
+                    (ek9-metrics--amount key (funcall resource item kind key))))))
     (list title 5
           (lambda (metrics item)
             (ek9-metrics--percent-text (funcall percent metrics item)))
@@ -200,20 +209,26 @@ KIND is `requests' or `limits'.  The column is a wide column."
           percent
           nil)))
 
+(defun ek9-metrics--resource-columns (resource)
+  "Return the column definitions for a pod or a container.
+RESOURCE is the function for `ek9-metrics--resource-column'."
+  (list (ek9-metrics--usage-column "CPU" 'cpu)
+        (ek9-metrics--usage-column "MEM" 'memory)
+        (ek9-metrics--resource-column "CPU/R" 'cpu 'requests resource)
+        (ek9-metrics--resource-column "MEM/R" 'memory 'requests resource)
+        (ek9-metrics--resource-column "CPU/L" 'cpu 'limits resource)
+        (ek9-metrics--resource-column "MEM/L" 'memory 'limits resource)))
+
 (defun ek9-metrics--definitions (type)
   "Return the column definitions for the metrics TYPE.
-TYPE is \"pods\" or \"nodes\".  Each definition is (TITLE WIDTH
-TEXT SORT WIDE).  TEXT and SORT are functions that take the metrics
-object and the item.  TEXT returns the cell text, and SORT a number
-or nil.  WIDE is non-nil for a wide column."
+TYPE is \"pods\", \"containers\", or \"nodes\".  Each definition
+is (TITLE WIDTH TEXT SORT WIDE).  TEXT and SORT are functions that
+take the metrics object and the item.  TEXT returns the cell text,
+and SORT a number or nil.  WIDE is non-nil for a wide column."
   (pcase type
-    ("pods"
-     (list (ek9-metrics--usage-column "CPU" 'cpu)
-           (ek9-metrics--usage-column "MEM" 'memory)
-           (ek9-metrics--pod-column "CPU/R" 'cpu 'requests)
-           (ek9-metrics--pod-column "MEM/R" 'memory 'requests)
-           (ek9-metrics--pod-column "CPU/L" 'cpu 'limits)
-           (ek9-metrics--pod-column "MEM/L" 'memory 'limits)))
+    ("pods" (ek9-metrics--resource-columns #'ek9-metrics--pod-resource))
+    ("containers"
+     (ek9-metrics--resource-columns #'ek9-metrics--container-resource))
     ("nodes"
      (list (ek9-metrics--usage-column "CPU" 'cpu)
            (ek9-metrics--node-column "CPU/A" 'cpu)
@@ -244,22 +259,34 @@ the form of a column."
       (when wide (list :wide t))))
    (ek9-metrics--definitions type)))
 
-(defun ek9-metrics-path (type namespace query)
+(defun ek9-metrics-path (type namespace query &optional name)
   "Return the API path for the metrics TYPE in NAMESPACE.
 NAMESPACE is a namespace name, or nil for all namespaces or for
 nodes.  QUERY is the query alist of the list, see `ek9-proxy-path'.
-The metrics API accepts only the label selector of QUERY."
-  (ek9-proxy-path (append ek9-metrics-api (list type))
-                  namespace nil
+The metrics API accepts only the label selector of QUERY.  NAME is an
+object name, or nil for a list.  For the type \"containers\", NAME
+is the name of the pod, and the path gives the metrics of that pod."
+  (ek9-proxy-path (append ek9-metrics-api
+                          (list (if (equal type "containers") "pods" type)))
+                  namespace name
                   (seq-filter (lambda (entry) (equal (car entry) "labelSelector"))
                               query)))
 
-(defun ek9-metrics-index (json)
+(defun ek9-metrics-index (type json)
   "Return a hash table that maps an item ID to its metrics object.
-JSON is the list that the metrics API gives."
+JSON is the reply of the metrics API for the metrics TYPE.  For the
+type \"containers\", JSON is one PodMetrics object, and the hash
+table has the metrics of each container.  For the other types, JSON
+is a list."
   (let ((index (make-hash-table :test #'equal)))
-    (dolist (metrics (alist-get 'items json))
-      (puthash (ek9-resource-item-id metrics) metrics index))
+    (if (equal type "containers")
+        ;; The same ID as an item of `ek9-resource-container-items'.
+        (let ((namespace (ek9-resource-item-namespace json)))
+          (dolist (container (alist-get 'containers json))
+            (puthash (concat namespace "/" (alist-get 'name container))
+                     container index)))
+      (dolist (metrics (alist-get 'items json))
+        (puthash (ek9-resource-item-id metrics) metrics index)))
     index))
 
 (provide 'ek9-metrics)

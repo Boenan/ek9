@@ -11,8 +11,8 @@
 ;; A list path, for example /api/v1/namespaces/team-a/pods, gives the
 ;; fixture PLURAL.VERSION.GROUP.json or PLURAL.json.  An object path,
 ;; for example /api/v1/namespaces/team-a/pods/web-1, gives the fixture
-;; PLURAL-NAME.json.  The fake ignores the namespace and the query, as
-;; the fake kubectl does.
+;; PLURAL-NAME.VERSION.GROUP.json or PLURAL-NAME.json.  The fake
+;; ignores the namespace and the query, as the fake kubectl does.
 ;;
 ;; With the Accept header of the server table, the reply is a table.
 ;; If the fixture BASE.table.json exists, the table has its column
@@ -122,8 +122,15 @@ without \".json\"."
            (list (or (ek9-fake-proxy--read (concat base ".json"))
                      (ek9-fake-proxy--read (concat plural ".json"))))
            (base (if (ek9-fake-proxy--read (concat base ".json")) base plural))
-           (object (and name (ek9-fake-proxy--read
-                              (format "%s-%s.json" plural name)))))
+           ;; An object of an API group can have its own fixture, for
+           ;; example pods-web-1.v1beta1.metrics.k8s.io.json.
+           (object (and name
+                        (or (and (not (string-empty-p group))
+                                 (ek9-fake-proxy--read
+                                  (format "%s-%s.%s.%s.json"
+                                          plural name version group)))
+                            (ek9-fake-proxy--read
+                             (format "%s-%s.json" plural name))))))
       (cond
        ((or (string-search "ek9-missing" path)
             (and name (not object))

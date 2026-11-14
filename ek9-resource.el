@@ -95,8 +95,10 @@ container name, or nil.  If nil, actions use the item itself.")
   (hidden nil :documentation "Non-nil to not offer this type in \":\".
 Use it for a type that only a drill-down can show.")
   (metrics nil :documentation "The type in the metrics API, or nil.
-The value is \"pods\" or \"nodes\".  The list then has CPU and memory
-columns from the metrics API, see `ek9-metrics-columns'.  These are
+The value is \"pods\", \"containers\", or \"nodes\".  The list then
+has CPU and memory columns from the metrics API, see
+`ek9-metrics-columns'.  It also has a top mode, see
+`ek9-list-toggle-top'.  These are
 the only columns of an API type that do not come from the server
 table."))
 
@@ -691,6 +693,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :items #'ek9-resource-container-items
   :target #'ek9-resource-container-target
   :row-face #'ek9-resource-container-face
+  :metrics "containers"
   :actions '(describe yaml logs shell port-forward events))
 
 (ek9-define-resource deployments
