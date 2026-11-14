@@ -176,7 +176,8 @@ METRICS is the metrics object of ITEM."
 (ert-deftest ek9-metrics-node-columns ()
   (ek9-test--with-metrics-list 'nodes
     (should (equal (mapcar #'car tabulated-list-format)
-                   '("NAME" "STATUS" "ROLES" "CPU" "CPU/A" "MEM" "MEM/A" "AGE" "VERSION")))
+                   '("NAME" "STATUS" "ROLES" "CPU" "CPU/A" "MEM" "MEM/A" "AGE" "VERSION"
+                     "INTERNAL-IP" "EXTERNAL-IP" "OS-IMAGE")))
     ;; The same values as "kubectl top nodes".  The node has 4 cores and
     ;; 8Gi.
     (let ((node (ek9-test--cells "kind-control-plane")))
@@ -256,6 +257,13 @@ METRICS is the metrics object of ITEM."
       (should (member "NODE" titles))
       (should-not (member "NOMINATED NODE" titles))
       (should-not (member "READINESS GATES" titles)))))
+
+(ert-deftest ek9-nodes-omit-columns ()
+  (ek9-test--with-metrics-list 'nodes
+    (let ((titles (mapcar #'car tabulated-list-format)))
+      (should (member "OS-IMAGE" titles))
+      (should-not (member "KERNEL-VERSION" titles))
+      (should-not (member "CONTAINER-RUNTIME" titles)))))
 
 ;;;; Containers
 

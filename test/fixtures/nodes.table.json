@@ -29,6 +29,36 @@
       "type": "string",
       "format": "",
       "priority": 0
+    },
+    {
+      "name": "Internal-IP",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    },
+    {
+      "name": "External-IP",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    },
+    {
+      "name": "OS-Image",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    },
+    {
+      "name": "Kernel-Version",
+      "type": "string",
+      "format": "",
+      "priority": 1
+    },
+    {
+      "name": "Container-Runtime",
+      "type": "string",
+      "format": "",
+      "priority": 1
     }
   ],
   "rows": [
@@ -38,7 +68,12 @@
         "Ready",
         "control-plane",
         "22d",
-        "v1.34.0"
+        "v1.34.0",
+        "172.18.0.2",
+        "<none>",
+        "Debian GNU/Linux 12 (bookworm)",
+        "6.8.0-45-generic",
+        "containerd://1.7.18"
       ]
     }
   ]

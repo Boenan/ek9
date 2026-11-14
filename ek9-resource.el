@@ -785,6 +785,7 @@ The plist makes ITEM the current namespace and shows its pods."
   :drill-down #'ek9-resource-drill-node
   :row-face #'ek9-resource-node-face
   :metrics "nodes"
+  :omit-columns '("KERNEL-VERSION" "CONTAINER-RUNTIME")
   :actions '(describe yaml edit delete events))
 
 (ek9-define-resource namespaces
